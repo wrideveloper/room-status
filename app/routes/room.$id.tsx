@@ -58,21 +58,34 @@ export default function RoomPage() {
 					</Label>
 					<Label>
 						<span className="block mb-2">Interviewee</span>
-						<Input
-							name="interviewee"
-							type="text"
-							defaultValue={data.interviewer?.interviewee ?? ""}
-						/>
+						<div className="flex items-center gap-2">
+							<Input
+								name="interviewee"
+								type="text"
+								defaultValue={data.interviewer?.interviewee ?? ""}
+							/>
+							<Button className="flex-1" form="data" variant="secondary">
+								<svg
+									title="plane-icon"
+									xmlns="http://www.w3.org/2000/svg"
+									width="1em"
+									height="1em"
+									viewBox="0 0 256 256"
+								>
+									<path
+										fill="currentColor"
+										d="M227.32 28.68a16 16 0 0 0-15.66-4.08h-.15L19.57 82.84a16 16 0 0 0-2.49 29.8L102 154l41.3 84.87a15.86 15.86 0 0 0 14.44 9.13q.69 0 1.38-.06a15.88 15.88 0 0 0 14-11.51l58.2-191.94v-.15a16 16 0 0 0-4-15.66m-69.49 203.17l-.05.14v-.07l-40.06-82.3l48-48a8 8 0 0 0-11.31-11.31l-48 48l-82.33-40.06h-.07h.14L216 40Z"
+									/>
+								</svg>
+							</Button>
+						</div>
 					</Label>
 				</form>
 				<hr className="my-2 h-[1px] bg-slate-600" />
 				<div className="flex flex-col gap-2">
 					<div className="flex gap-2 justify-stretch w-full">
-						<Button className="flex-1" form="data">
-							Submit
-						</Button>
-						<Button className="flex-1" variant="destructive" form="reset">
-							Reset
+						<Button className="flex-1" form="reset">
+							Done
 						</Button>
 					</div>
 					<Button className="flex-1" variant="outline" form="quit">
@@ -107,7 +120,10 @@ async function updateInterviewee(id: string, form: FormData) {
 	const interviewee = form.get("interviewee") as string;
 	await db
 		.update(interviewers)
-		.set({ interviewee: interviewee })
+		.set({
+			interviewee: interviewee,
+			updated_at: Date.now(),
+		})
 		.where(eq(interviewers.id, id))
 		.execute();
 	return json({ id });
@@ -116,7 +132,10 @@ async function updateInterviewee(id: string, form: FormData) {
 async function resetInterviewee(id: string) {
 	await db
 		.update(interviewers)
-		.set({ interviewee: null })
+		.set({
+			interviewee: null,
+			updated_at: null,
+		})
 		.where(eq(interviewers.id, id))
 		.execute();
 	return json({ id });

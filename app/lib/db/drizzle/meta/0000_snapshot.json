@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "0044c762-12f7-45cc-9f65-f74cb22bf44a",
+  "id": "64c21185-ede5-4452-a520-a04a5ac84704",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "interviewers": {
@@ -12,8 +12,7 @@
           "type": "text",
           "primaryKey": true,
           "notNull": true,
-          "autoincrement": false,
-          "default": "'uuid_generate_v4()'"
+          "autoincrement": false
         },
         "name": {
           "name": "name",
@@ -32,6 +31,13 @@
         "interviewee": {
           "name": "interviewee",
           "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "integer",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false

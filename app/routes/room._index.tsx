@@ -18,6 +18,7 @@ import { Button } from "~/components/ui/button";
 import { db } from "~/lib/db/client";
 import { interviewers } from "~/lib/db/schema";
 import { randomUUID } from "node:crypto";
+import { INTERVIEWERS } from "~/lib/data/interviewer";
 
 export const meta: MetaFunction = () => {
 	return [
@@ -36,12 +37,30 @@ export default function RoomPage() {
 				<form method="POST" className="flex flex-col gap-4 mt-8">
 					<Label>
 						<span className="block mb-2">Nama Lengkap</span>
-						<Input
-							name="name"
-							type="text"
-							placeholder="Nama Lengkap"
-							required
-						/>
+						<Select name="name" required>
+							<SelectTrigger className="w-full">
+								<SelectValue
+									className="text-slate-600"
+									placeholder="Pilih Nama"
+								/>
+							</SelectTrigger>
+							<SelectContent>
+								<SelectGroup>
+									<SelectLabel>Nama Lengkap</SelectLabel>
+									{INTERVIEWERS.map((interviewer) => (
+										<SelectItem
+											key={interviewer.id}
+											value={JSON.stringify({
+												id: interviewer.id,
+												name: interviewer.name,
+											})}
+										>
+											{interviewer.name}
+										</SelectItem>
+									))}
+								</SelectGroup>
+							</SelectContent>
+						</Select>
 					</Label>
 					<Label>
 						<span className="block mb-2">Ruangan</span>
@@ -72,10 +91,10 @@ export default function RoomPage() {
 
 export async function action(args: ActionFunctionArgs) {
 	const form = await args.request.formData();
-	const id = randomUUID();
+	const { id, name } = JSON.parse(form.get("name") as string);
 	await db.insert(interviewers).values({
-		id: id,
-		name: form.get("name") as string,
+		id,
+		name,
 		room: form.get("room") as string,
 		interviewee: null,
 	});

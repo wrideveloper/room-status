@@ -6,7 +6,9 @@ import {
 import { Link, useLoaderData } from "@remix-run/react";
 import { fetchInterviewersGroupedByRoom } from "~/lib/server/util.server.ts";
 import { useEventStream } from "@remix-sse/client";
-import { Interviewer } from "~/lib/db/schema";
+import type { Interviewer } from "~/lib/db/schema";
+import { intervalToDuration } from "date-fns";
+import { useEffect, useState } from "react";
 
 export const meta: MetaFunction = () => {
 	return [
@@ -40,7 +42,7 @@ export default function Index() {
 			>
 				Go to room page
 			</Link>
-			<div className="grid grid-cols-3 gap-4 mx-auto max-w-screen-lg mt-10 px-8">
+			<div className="grid grid-cols-2 gap-4 mx-auto max-w-screen-lg mt-10 px-8">
 				{Object.entries(
 					liveData?.interviewersByRoom ?? data.interviewersByRoom,
 				).map(([room, interviewers]) => (
@@ -51,26 +53,73 @@ export default function Index() {
 						<hr className="my-2 h-[1px] bg-slate-600" />
 						<div className="flex flex-col gap-2">
 							{interviewers.map((interviewer) => (
-								<div key={interviewer.id as string} className="flex">
-									<div className="flex items-center justify-center pr-2">
-										<div
-											className={`w-4 h-4 rounded-full ${interviewer.interviewee === null ? "bg-emerald-500" : "bg-red-500"}`}
-										/>
-									</div>
-									<div className="">
-										<p className="font-semibold text-slate-600 whitespace-nowrap">
-											{interviewer.name}
-										</p>
-										<p className="text-sm text-slate-500">
-											{interviewer.interviewee ?? "-"}
-										</p>
-									</div>
-								</div>
+								<InterviewerCard
+									key={interviewer.id}
+									interviewer={interviewer}
+								/>
 							))}
 						</div>
 					</div>
 				))}
 			</div>
+		</div>
+	);
+}
+
+type InterviewerCardProps = {
+	interviewer: Interviewer;
+};
+
+function InterviewerCard(props: InterviewerCardProps) {
+	const [duration, setDuration] = useState(() =>
+		props.interviewer.updated_at !== null
+			? intervalToDuration({
+					start: new Date(props.interviewer.updated_at),
+					end: new Date(),
+				})
+			: null,
+	);
+
+	useEffect(() => {
+		const interval = setInterval(() => {
+			if (props.interviewer.updated_at === null) {
+				setDuration(null);
+				return;
+			}
+			setDuration(() =>
+				intervalToDuration({
+					start: new Date(props.interviewer.updated_at as number),
+					end: new Date(),
+				}),
+			);
+		}, 1000);
+		return () => clearInterval(interval);
+	}, [props.interviewer.updated_at]);
+
+	return (
+		<div
+			key={props.interviewer.id as string}
+			className="flex items-center gap-2"
+		>
+			<div className="flex items-center justify-center pr-2">
+				<div
+					className={`w-4 h-4 rounded-full ${props.interviewer.interviewee === null ? "bg-emerald-500" : "bg-red-500"}`}
+				/>
+			</div>
+			<div className="">
+				<p className="font-semibold text-slate-600 whitespace-nowrap">
+					{props.interviewer.name}
+				</p>
+				<p className="text-sm text-slate-500">
+					{props.interviewer.interviewee ?? "-"}
+				</p>
+			</div>
+			{duration !== null && (
+				<div className="ml-auto text-slate-700 font-medium">
+					{(duration.minutes ?? 0).toString().padStart(2, "0")}:
+					{(duration.seconds ?? 0).toString().padStart(2, "0")}
+				</div>
+			)}
 		</div>
 	);
 }
