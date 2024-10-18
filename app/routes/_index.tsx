@@ -1,8 +1,4 @@
-import {
-	json,
-	type LoaderFunctionArgs,
-	type MetaFunction,
-} from "@remix-run/node";
+import { json, type MetaFunction } from "@remix-run/node";
 import { Link, useLoaderData } from "@remix-run/react";
 import { fetchInterviewersGroupedByRoom } from "~/lib/server/util.server.ts";
 import { useEventStream } from "@remix-sse/client";
@@ -13,11 +9,11 @@ import { useEffect, useState } from "react";
 export const meta: MetaFunction = () => {
 	return [
 		{ title: "Room Status" },
-		{ name: "description", content: "Welcome to Remix!" },
+		{ name: "description", content: "Room Status" },
 	];
 };
 
-export async function loader(args: LoaderFunctionArgs) {
+export async function loader() {
 	const interviewersByRoom = await fetchInterviewersGroupedByRoom();
 	return json({ interviewersByRoom });
 }

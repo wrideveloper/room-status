@@ -23,7 +23,7 @@ import { INTERVIEWERS } from "~/lib/data/interviewer";
 export const meta: MetaFunction = () => {
 	return [
 		{ title: "Interviewer" },
-		{ name: "description", content: "Interviewer Registration" },
+		{ name: "description", content: "Interviewer" },
 	];
 };
 
