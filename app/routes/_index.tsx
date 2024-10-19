@@ -5,6 +5,7 @@ import { useEventStream } from "@remix-sse/client";
 import type { Interviewer } from "~/lib/db/schema";
 import { intervalToDuration } from "date-fns";
 import { useEffect, useState } from "react";
+import { Button } from "~/components/ui/button";
 
 export const meta: MetaFunction = () => {
 	return [
@@ -32,12 +33,12 @@ export default function Index() {
 			<h1 className="text-center mt-10 font-sans text-5xl font-bold text-slate-800">
 				Status Ruangan
 			</h1>
-			<Link
-				to="/room"
-				className="block text-center mt-2 text-yellow-500 underline"
-			>
-				Go to room page
-			</Link>
+			<p className="text-center text-lg text-slate-700 mt-4">
+				Kalo merah berarti lagi nge-interview, kalo hijau berarti available buat nge-interview.
+			</p>
+			<Button className="mx-auto block mt-8">
+				<Link to="/room">INTERVIEWER MASUK SINI BANG</Link>
+			</Button>
 			<div className="grid grid-cols-2 gap-4 mx-auto max-w-screen-lg mt-10 px-8">
 				{Object.entries(
 					liveData?.interviewersByRoom ?? data.interviewersByRoom,

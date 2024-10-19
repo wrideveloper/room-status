@@ -4,7 +4,6 @@ import {
 	redirect,
 } from "@remix-run/node";
 import { Label } from "~/components/ui/label";
-import { Input } from "~/components/ui/input";
 import {
 	Select,
 	SelectContent,
@@ -16,8 +15,8 @@ import {
 } from "~/components/ui/select";
 import { Button } from "~/components/ui/button";
 import { db } from "~/lib/db/client";
+import { eq } from "drizzle-orm";
 import { interviewers } from "~/lib/db/schema";
-import { randomUUID } from "node:crypto";
 import { INTERVIEWERS } from "~/lib/data/interviewer";
 
 export const meta: MetaFunction = () => {
@@ -92,6 +91,13 @@ export default function RoomPage() {
 export async function action(args: ActionFunctionArgs) {
 	const form = await args.request.formData();
 	const { id, name } = JSON.parse(form.get("name") as string);
+	// check if the interviewer already exists
+	const interviewer = await db
+		.select()
+		.from(interviewers)
+		.where(eq(interviewers.id, id));
+	if (interviewer.length > 0) return redirect(`/room/${id}`);
+
 	await db.insert(interviewers).values({
 		id,
 		name,

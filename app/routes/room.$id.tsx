@@ -1,15 +1,16 @@
 import {
-	json,
 	type LoaderFunctionArgs,
 	type MetaFunction,
+	json,
+  redirect,
 } from "@remix-run/node";
 import { useLoaderData } from "@remix-run/react";
+import { eq } from "drizzle-orm";
+import { Button } from "~/components/ui/button";
+import { Input } from "~/components/ui/input";
+import { Label } from "~/components/ui/label";
 import { db } from "~/lib/db/client";
 import { interviewers } from "~/lib/db/schema";
-import { eq } from "drizzle-orm";
-import { Label } from "~/components/ui/label";
-import { Input } from "~/components/ui/input";
-import { Button } from "~/components/ui/button";
 
 export const meta: MetaFunction = () => {
 	return [
@@ -65,7 +66,7 @@ export default function RoomPage() {
 								defaultValue={data.interviewer?.interviewee ?? ""}
 							/>
 							<Button className="flex-1" form="data" variant="secondary">
-                OK
+								OK
 							</Button>
 						</div>
 					</Label>
@@ -132,5 +133,5 @@ async function resetInterviewee(id: string) {
 
 async function quitRoom(id: string) {
 	await db.delete(interviewers).where(eq(interviewers.id, id)).execute();
-	return json({ id });
+	return redirect("/");
 }
