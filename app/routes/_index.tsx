@@ -71,9 +71,9 @@ function InterviewerCard(props: InterviewerCardProps) {
 	const [duration, setDuration] = useState(() =>
 		props.interviewer.updated_at !== null
 			? intervalToDuration({
-					start: new Date(props.interviewer.updated_at),
-					end: new Date(),
-				})
+				start: new Date(props.interviewer.updated_at),
+				end: new Date(),
+			})
 			: null,
 	);
 
@@ -83,15 +83,24 @@ function InterviewerCard(props: InterviewerCardProps) {
 				setDuration(null);
 				return;
 			}
+
+			if (props.interviewer.interviewee === null) {
+				setDuration(null);
+				return
+			}
+
 			setDuration(() =>
 				intervalToDuration({
 					start: new Date(props.interviewer.updated_at as number),
 					end: new Date(),
 				}),
 			);
+
 		}, 1000);
 		return () => clearInterval(interval);
 	}, [props.interviewer.updated_at]);
+
+	console.log(props.interviewer)
 
 	return (
 		<div

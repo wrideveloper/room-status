@@ -4,7 +4,7 @@ import {
 	json,
 	redirect,
 } from "@remix-run/node";
-import { useLoaderData } from "@remix-run/react";
+import { useLoaderData, useFetcher } from "@remix-run/react";
 import { eq } from "drizzle-orm";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
@@ -52,18 +52,23 @@ export async function loader({ params }: LoaderFunctionArgs) {
 
 export default function RoomPage() {
 	const data = useLoaderData<typeof loader>();
+	const fetcher = useFetcher();
+
 	const [isDialogOpen, setIsDialogOpen] = useState(false);
-	const [timeLeft, setTimeLeft] = useState(20 * 60);
+	const [timeLeft, setTimeLeft] = useState(1 * 60);
 	const [isTimerRunning, setIsTimerRunning] = useState(false);
 	const [showTimeAlert, setShowTimeAlert] = useState(false);
 	const isFinished = data.interviewer?.interviewee === null;
+
+	console.log(isFinished, "IS FINISHED")
+	console.log(data, "INI DATA")
 
 	useEffect(() => {
 		if (!isTimerRunning || data.interviewer?.interviewee === null) return;
 
 		const interval = setInterval(() => {
 			setTimeLeft((prev) => {
-				if (prev <= 1) {
+				if (prev <= 1) { // If time done
 					setShowTimeAlert(true);
 					return 0;
 				}
@@ -74,10 +79,17 @@ export default function RoomPage() {
 		return () => clearInterval(interval);
 	}, [isTimerRunning, data.interviewer?.interviewee]);
 
-	const handleStartInterview = () => {
+	const handleStartInterview = (e: React.MouseEvent<HTMLButtonElement>) => {
+		e.preventDefault();
+
+		const form = document.getElementById('data') as HTMLFormElement;
+		const formData = new FormData(form);
+
+		fetcher.submit(formData, { method: "post" });
+
 		setIsDialogOpen(true);
 		setIsTimerRunning(true);
-		setTimeLeft(20 * 60);
+		setTimeLeft(1 * 60);
 	};
 
 	const handleCloseDialog = async () => {
@@ -103,13 +115,16 @@ export default function RoomPage() {
 
 	return (
 		<div className="">
+
 			<form method="POST" id="quit" className="invisible">
 				<input type="hidden" name="_action" value="quit" />
 			</form>
+
 			<main className="mx-auto max-w-fit min-w-[24rem] mt-10 p-6 border rounded-md bg-white">
 				<h1 className="font-semibold text-2xl text-slate-800">
 					Room Data
 				</h1>
+
 				<form
 					className="flex flex-col gap-4 mt-8"
 					id="data"
@@ -126,7 +141,7 @@ export default function RoomPage() {
 						/>
 					</Label>
 					<Label>
-						<span className="block mb-2">Interviewee</span>
+						<span className="block mb-2">Peserta</span>
 						<div className="flex items-center gap-2">
 							<Input
 								name="interviewee"
@@ -135,29 +150,37 @@ export default function RoomPage() {
 									data.interviewer?.interviewee ?? ""
 								}
 							/>
-							<Button
+							{/* <Button
 								className="flex-1"
-								form="data"
+								type="submit"
 								variant="secondary"
 							>
 								OK
-							</Button>
+							</Button> */}
 						</div>
 					</Label>
+
+					<hr className="my-2 h-[1px] bg-slate-600" />
+
+					<div className="flex flex-col gap-2">
+						<Button
+							onClick={handleStartInterview}
+							className="w-full bg-yellow-500 hover:bg-yellow-600 text-slate-900 font-semibold"
+							type="button"
+						>
+							MULAI INTERVIEW
+						</Button>
+
+						<Button
+							className="flex-1"
+							variant="outline"
+							form="quit"
+							type="submit"
+						>
+							INI SAATNYA (PULANG)
+						</Button>
+					</div>
 				</form>
-				<hr className="my-2 h-[1px] bg-slate-600" />
-				<div className="flex flex-col gap-2">
-					<Button
-						className="w-full bg-yellow-500 hover:bg-yellow-600 text-slate-900 font-semibold"
-						onClick={handleStartInterview}
-						type="button"
-					>
-						MULAI INTERVIEW
-					</Button>
-					<Button className="flex-1" variant="outline" form="quit">
-						INI SAATNYA (PULANG)
-					</Button>
-				</div>
 			</main>
 
 			{/* Google Form */}
@@ -269,6 +292,9 @@ export async function action({ request, params }: LoaderFunctionArgs) {
 
 async function updateInterviewee(id: string, form: FormData) {
 	const interviewee = form.get("interviewee") as string;
+
+	console.log("Updating interviewee:", { id, interviewee }); // Debug log
+
 	await db
 		.update(interviewers)
 		.set({
@@ -277,6 +303,9 @@ async function updateInterviewee(id: string, form: FormData) {
 		})
 		.where(eq(interviewers.id, id))
 		.execute();
+
+	console.log("Update complete"); // Debug log
+
 	return json({ id });
 }
 

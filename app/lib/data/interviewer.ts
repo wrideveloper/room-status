@@ -1,4 +1,5 @@
 export const INTERVIEWERS = [
+	{ id: "laksa", name: "Laksamana AryaPutra" },
 	{ id: "adam", name: "Adam Nur Alifi" },
 	{ id: "ahmad", name: "Ahmad Taufiq Hidayatulloh" },
 	{ id: "akhmad", name: "Akhmad Aakhif Athallah" },
