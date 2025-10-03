@@ -13,4 +13,7 @@ export default defineConfig({
 		}),
 		tsconfigPaths(),
 	],
+	server: {
+		allowedHosts: ['frontend_web'],
+	}
 });

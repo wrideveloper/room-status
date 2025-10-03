@@ -2,15 +2,32 @@ import {
 	type LoaderFunctionArgs,
 	type MetaFunction,
 	json,
-  redirect,
+	redirect,
 } from "@remix-run/node";
-import { useLoaderData } from "@remix-run/react";
+import { useLoaderData, useFetcher } from "@remix-run/react";
 import { eq } from "drizzle-orm";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
+import {
+	Dialog,
+	DialogContent,
+	DialogDescription,
+	DialogHeader,
+	DialogTitle,
+} from "~/components/ui/dialog";
+import {
+	AlertDialog,
+	AlertDialogAction,
+	AlertDialogContent,
+	AlertDialogDescription,
+	AlertDialogFooter,
+	AlertDialogHeader,
+	AlertDialogTitle,
+} from "~/components/ui/alert-dialog";
 import { db } from "~/lib/db/client";
 import { interviewers } from "~/lib/db/schema";
+import { useEffect, useState } from "react";
 
 export const meta: MetaFunction = () => {
 	return [
@@ -35,18 +52,94 @@ export async function loader({ params }: LoaderFunctionArgs) {
 
 export default function RoomPage() {
 	const data = useLoaderData<typeof loader>();
+	const fetcher = useFetcher();
+
+	const [isDialogOpen, setIsDialogOpen] = useState(false);
+	const [timeLeft, setTimeLeft] = useState(20 * 60);
+	const [isTimerRunning, setIsTimerRunning] = useState(false);
+	const [showTimeAlert, setShowTimeAlert] = useState(false);
+	const [hasShownAlert, setHasShownAlert] = useState(false);
+	const isFinished = data.interviewer?.interviewee === null;
+	const isTimeout = timeLeft <= 0;
+
+
+	console.log(isFinished, "IS FINISHED")
+	console.log(data, "INI DATA")
+
+	useEffect(() => {
+		if (!isTimerRunning || data.interviewer?.interviewee === null) return;
+
+		const interval = setInterval(() => {
+			setTimeLeft((prev) => {
+				const newTime = prev - 1;
+
+				if (newTime === 0 && !hasShownAlert) {
+					setShowTimeAlert(true);
+					setHasShownAlert(true);
+				}
+
+				return newTime;
+			});
+		}, 1000);
+
+		return () => clearInterval(interval);
+	}, [isTimerRunning, data.interviewer?.interviewee, hasShownAlert]);
+
+	const handleStartInterview = (e: React.MouseEvent<HTMLButtonElement>) => {
+		e.preventDefault();
+
+		const form = document.getElementById('data') as HTMLFormElement;
+		const formData = new FormData(form);
+
+		fetcher.submit(formData, { method: "post" });
+
+		setIsDialogOpen(true);
+		setIsTimerRunning(true);
+		setTimeLeft(20 * 60);
+		setHasShownAlert(false);
+	};
+
+	const handleCloseDialog = async () => {
+		setIsDialogOpen(false);
+		setIsTimerRunning(false);
+		const formData = new FormData();
+		formData.append("_action", "reset");
+
+		await fetch(window.location.href, {
+			method: "POST",
+			body: formData,
+		});
+		window.location.reload();
+	};
+
+	const formatTime = (seconds: number) => {
+		const absSeconds = Math.abs(seconds);
+		const mins = Math.floor(absSeconds / 60);
+		const secs = absSeconds % 60;
+		const timeString = `${mins.toString().padStart(2, "0")}:${secs
+			.toString()
+			.padStart(2, "0")}`;
+
+		return seconds < 0 ? `-${timeString}` : timeString;
+	};
 
 	return (
 		<div className="">
-			<form method="POST" id="reset" className="invisible">
-				<input type="hidden" name="_action" value="reset" />
-			</form>
+
 			<form method="POST" id="quit" className="invisible">
 				<input type="hidden" name="_action" value="quit" />
 			</form>
+
 			<main className="mx-auto max-w-fit min-w-[24rem] mt-10 p-6 border rounded-md bg-white">
-				<h1 className="font-semibold text-2xl text-slate-800">Room Data</h1>
-				<form className="flex flex-col gap-4 mt-8" id="data" method="POST">
+				<h1 className="font-semibold text-2xl text-slate-800">
+					Room Data
+				</h1>
+
+				<form
+					className="flex flex-col gap-4 mt-8"
+					id="data"
+					method="POST"
+				>
 					<input type="hidden" name="_action" value="update" />
 					<Label>
 						<span className="block mb-2">Name</span>
@@ -58,33 +151,139 @@ export default function RoomPage() {
 						/>
 					</Label>
 					<Label>
-						<span className="block mb-2">Interviewee</span>
+						<span className="block mb-2">Peserta</span>
 						<div className="flex items-center gap-2">
 							<Input
 								name="interviewee"
 								type="text"
-								defaultValue={data.interviewer?.interviewee ?? ""}
+								defaultValue={
+									data.interviewer?.interviewee ?? ""
+								}
 							/>
-							<Button className="flex-1" form="data" variant="secondary">
+							{/* <Button
+								className="flex-1"
+								type="submit"
+								variant="secondary"
+							>
 								OK
-							</Button>
+							</Button> */}
 						</div>
 					</Label>
-				</form>
-				<hr className="my-2 h-[1px] bg-slate-600" />
-				<div className="flex flex-col gap-2">
-					<div className="flex gap-2 justify-stretch w-full">
-						<Button className="flex-1" form="reset">
-							UDAH SELESAI INTERVIEW
+
+					<hr className="my-2 h-[1px] bg-slate-600" />
+
+					<div className="flex flex-col gap-2">
+						<Button
+							onClick={handleStartInterview}
+							className="w-full bg-yellow-500 hover:bg-yellow-600 text-slate-900 font-semibold"
+							type="button"
+						>
+							MULAI INTERVIEW
+						</Button>
+
+						<Button
+							className="flex-1"
+							variant="outline"
+							form="quit"
+							type="submit"
+						>
+							INI SAATNYA (PULANG)
 						</Button>
 					</div>
-					<Button className="flex-1" variant="outline" form="quit">
-						PULANG / IZIN BRO
-					</Button>
-				</div>
+				</form>
 			</main>
+
+			{/* Google Form */}
+			<Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+				<DialogContent className="max-w-4xl h-[90vh] flex flex-col">
+					<DialogHeader>
+						<div className="flex items-center justify-between">
+							<div>
+								<DialogTitle className="text-2xl">
+									Interview Session
+								</DialogTitle>
+								<DialogDescription>
+									{data.interviewer?.name} -{" "}
+									{data.interviewer?.interviewee ||
+										"Belum ada interviewee"}{" "}
+									| {data.interviewer?.room.toUpperCase()}
+								</DialogDescription>
+							</div>
+							<div className="flex items-center gap-4">
+								
+								{!isFinished && (
+									<>
+										<div className="flex items-center gap-2">
+											<div className={`w-3 h-3 rounded-full ${isTimeout ? 'bg-red-500' : 'bg-green-500 animate-pulse'
+												}`} />
+											<span className="text-sm font-medium">
+												{isTimeout ? 'Timeout' : 'Live'}
+											</span>
+										</div>
+										<div className={`text-2xl font-bold tabular-nums ${isTimeout ? 'text-red-500' : 'text-green-500'
+											}`}>
+											{formatTime(timeLeft)}
+										</div>
+									</>
+								)}
+								<Button
+									onClick={handleCloseDialog}
+									variant="destructive"
+									size="sm"
+								>
+									Done
+								</Button>
+							</div>
+						</div>
+					</DialogHeader>
+					<div className="flex-1 overflow-hidden rounded-md border">
+						<iframe
+							src="https://docs.google.com/forms/d/e/1FAIpQLSdxvXkseIswWCzJurVKkZYLFf7hN62WNFOOAAL-ZBXtzF8YFg/viewform?usp=sharing&ouid=106221484184732111240"
+							width="100%"
+							height="100%"
+							frameBorder="0"
+							marginHeight={0}
+							marginWidth={0}
+						>
+							Loading…
+						</iframe>
+					</div>
+				</DialogContent>
+			</Dialog>
+
+			{/* Time Alert */}
+			<AlertDialog open={showTimeAlert} onOpenChange={setShowTimeAlert}>
+				<AlertDialogContent>
+					<AlertDialogHeader>
+						<AlertDialogTitle className="text-2xl">
+							⏰ LIHAT WAKTU BRO
+						</AlertDialogTitle>
+						<AlertDialogDescription className="text-base">
+							Waktu interview sudah habis bolo!
+						</AlertDialogDescription>
+					</AlertDialogHeader>
+					<AlertDialogFooter>
+						<AlertDialogAction onClick={() => setShowTimeAlert(false)}>
+							OK, Mengerti
+						</AlertDialogAction>
+					</AlertDialogFooter>
+				</AlertDialogContent>
+			</AlertDialog>
 		</div>
 	);
+}
+
+async function resetRoom(id: string) {
+	await db
+		.update(interviewers)
+		.set({
+			interviewee: null,
+			updated_at: Date.now(),
+		})
+		.where(eq(interviewers.id, id))
+		.execute();
+
+	return json({ id });
 }
 
 export async function action({ request, params }: LoaderFunctionArgs) {
@@ -95,12 +294,12 @@ export async function action({ request, params }: LoaderFunctionArgs) {
 		return updateInterviewee(id, form);
 	}
 
-	if (form.get("_action") === "reset") {
-		return resetInterviewee(id);
-	}
-
 	if (form.get("_action") === "quit") {
 		return quitRoom(id);
+	}
+
+	if (form.get("_action") === "reset") {
+		return resetRoom(id);
 	}
 
 	return json({ id });
@@ -108,6 +307,9 @@ export async function action({ request, params }: LoaderFunctionArgs) {
 
 async function updateInterviewee(id: string, form: FormData) {
 	const interviewee = form.get("interviewee") as string;
+
+	console.log("Updating interviewee:", { id, interviewee }); // Debug log
+
 	await db
 		.update(interviewers)
 		.set({
@@ -116,18 +318,9 @@ async function updateInterviewee(id: string, form: FormData) {
 		})
 		.where(eq(interviewers.id, id))
 		.execute();
-	return json({ id });
-}
 
-async function resetInterviewee(id: string) {
-	await db
-		.update(interviewers)
-		.set({
-			interviewee: null,
-			updated_at: null,
-		})
-		.where(eq(interviewers.id, id))
-		.execute();
+	console.log("Update complete"); // Debug log
+
 	return json({ id });
 }
 
