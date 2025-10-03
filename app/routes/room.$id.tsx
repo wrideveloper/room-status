@@ -58,7 +58,10 @@ export default function RoomPage() {
 	const [timeLeft, setTimeLeft] = useState(1 * 60);
 	const [isTimerRunning, setIsTimerRunning] = useState(false);
 	const [showTimeAlert, setShowTimeAlert] = useState(false);
+	const [hasShownAlert, setHasShownAlert] = useState(false);
 	const isFinished = data.interviewer?.interviewee === null;
+	const isTimeout = timeLeft <= 0;
+
 
 	console.log(isFinished, "IS FINISHED")
 	console.log(data, "INI DATA")
@@ -68,16 +71,19 @@ export default function RoomPage() {
 
 		const interval = setInterval(() => {
 			setTimeLeft((prev) => {
-				if (prev <= 1) { // If time done
+				const newTime = prev - 1;
+
+				if (newTime === 0 && !hasShownAlert) {
 					setShowTimeAlert(true);
-					return 0;
+					setHasShownAlert(true);
 				}
-				return prev - 1;
+
+				return newTime;
 			});
 		}, 1000);
 
 		return () => clearInterval(interval);
-	}, [isTimerRunning, data.interviewer?.interviewee]);
+	}, [isTimerRunning, data.interviewer?.interviewee, hasShownAlert]);
 
 	const handleStartInterview = (e: React.MouseEvent<HTMLButtonElement>) => {
 		e.preventDefault();
@@ -90,6 +96,7 @@ export default function RoomPage() {
 		setIsDialogOpen(true);
 		setIsTimerRunning(true);
 		setTimeLeft(1 * 60);
+		setHasShownAlert(false);
 	};
 
 	const handleCloseDialog = async () => {
@@ -106,11 +113,14 @@ export default function RoomPage() {
 	};
 
 	const formatTime = (seconds: number) => {
-		const mins = Math.floor(seconds / 60);
-		const secs = seconds % 60;
-		return `${mins.toString().padStart(2, "0")}:${secs
+		const absSeconds = Math.abs(seconds);
+		const mins = Math.floor(absSeconds / 60);
+		const secs = absSeconds % 60;
+		const timeString = `${mins.toString().padStart(2, "0")}:${secs
 			.toString()
 			.padStart(2, "0")}`;
+
+		return seconds < 0 ? `-${timeString}` : timeString;
 	};
 
 	return (
@@ -200,15 +210,18 @@ export default function RoomPage() {
 								</DialogDescription>
 							</div>
 							<div className="flex items-center gap-4">
+								
 								{!isFinished && (
 									<>
 										<div className="flex items-center gap-2">
-											<div className="w-3 h-3 bg-green-500 rounded-full animate-pulse" />
+											<div className={`w-3 h-3 rounded-full ${isTimeout ? 'bg-red-500' : 'bg-green-500 animate-pulse'
+												}`} />
 											<span className="text-sm font-medium">
-												Live
+												{isTimeout ? 'Timeout' : 'Live'}
 											</span>
 										</div>
-										<div className="text-2xl font-bold text-green-500 tabular-nums">
+										<div className={`text-2xl font-bold tabular-nums ${isTimeout ? 'text-red-500' : 'text-green-500'
+											}`}>
 											{formatTime(timeLeft)}
 										</div>
 									</>
@@ -225,7 +238,7 @@ export default function RoomPage() {
 					</DialogHeader>
 					<div className="flex-1 overflow-hidden rounded-md border">
 						<iframe
-							src="https://docs.google.com/forms/d/e/1FAIpQLSddym_7rm-6MaZIO70kzMNqfh6Szjf12AyuemLmIJwiCJX7oQ/viewform?embedded=true"
+							src="https://docs.google.com/forms/d/e/1FAIpQLSdxvXkseIswWCzJurVKkZYLFf7hN62WNFOOAAL-ZBXtzF8YFg/viewform?usp=sharing&ouid=106221484184732111240"
 							width="100%"
 							height="100%"
 							frameBorder="0"
@@ -250,7 +263,9 @@ export default function RoomPage() {
 						</AlertDialogDescription>
 					</AlertDialogHeader>
 					<AlertDialogFooter>
-						<AlertDialogAction>OK, Mengerti</AlertDialogAction>
+						<AlertDialogAction onClick={() => setShowTimeAlert(false)}>
+							OK, Mengerti
+						</AlertDialogAction>
 					</AlertDialogFooter>
 				</AlertDialogContent>
 			</AlertDialog>

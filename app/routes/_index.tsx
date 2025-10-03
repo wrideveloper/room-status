@@ -77,6 +77,8 @@ function InterviewerCard(props: InterviewerCardProps) {
 			: null,
 	);
 
+	console.log(duration, "INI DURATION")
+
 	useEffect(() => {
 		const interval = setInterval(() => {
 			if (props.interviewer.updated_at === null) {
