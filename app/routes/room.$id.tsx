@@ -55,7 +55,7 @@ export default function RoomPage() {
 	const fetcher = useFetcher();
 
 	const [isDialogOpen, setIsDialogOpen] = useState(false);
-	const [timeLeft, setTimeLeft] = useState(1 * 60);
+	const [timeLeft, setTimeLeft] = useState(20 * 60);
 	const [isTimerRunning, setIsTimerRunning] = useState(false);
 	const [showTimeAlert, setShowTimeAlert] = useState(false);
 	const [hasShownAlert, setHasShownAlert] = useState(false);
@@ -95,7 +95,7 @@ export default function RoomPage() {
 
 		setIsDialogOpen(true);
 		setIsTimerRunning(true);
-		setTimeLeft(1 * 60);
+		setTimeLeft(20 * 60);
 		setHasShownAlert(false);
 	};
 
