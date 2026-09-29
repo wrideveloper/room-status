@@ -1,0 +1,10 @@
+# pnpm 11+ build policy.
+# Dependency lifecycle scripts are blocked by default (strictDepBuilds is on),
+# so each allowed package must be listed here explicitly.
+allowBuilds:
+  # Native SQLite addon — required at runtime.
+  better-sqlite3: true
+  # Vite's bundler (via @remix-run/dev) needs its platform binary setup.
+  esbuild: true
+  # Biome CLI binary setup (dev tooling).
+  '@biomejs/biome': true
