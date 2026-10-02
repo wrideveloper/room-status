@@ -1,4 +1,4 @@
-import { type MetaFunction } from "react-router";
+import type { MetaFunction } from "react-router";
 import { Link, useLoaderData } from "react-router";
 import { fetchInterviewersGroupedByRoom } from "~/lib/server/util.server.ts";
 import type { Interviewer } from "~/lib/db/schema";
@@ -116,7 +116,7 @@ function InterviewerCard(props: InterviewerCardProps) {
 
 		}, 1000);
 		return () => clearInterval(interval);
-	}, [props.interviewer.updated_at]);
+	}, [props.interviewer.updated_at, props.interviewer.interviewee]);
 
 	return (
 		<div

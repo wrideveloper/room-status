@@ -8,8 +8,6 @@ allowBuilds:
   esbuild: true
   # Biome CLI binary setup (dev tooling).
   '@biomejs/biome': true
-  # Native resolver used by eslint-import-resolver-typescript.
-  unrs-resolver: true
 
 # Security overrides (same-major, dev-only).
 overrides:

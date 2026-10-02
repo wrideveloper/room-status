@@ -238,6 +238,7 @@ export default function RoomPage() {
 					</DialogHeader>
 					<div className="flex-1 overflow-hidden rounded-md border">
 						<iframe
+							title="Interview form"
 							src="https://docs.google.com/forms/d/e/1FAIpQLSdxvXkseIswWCzJurVKkZYLFf7hN62WNFOOAAL-ZBXtzF8YFg/viewform?usp=sharing&ouid=106221484184732111240"
 							width="100%"
 							height="100%"
