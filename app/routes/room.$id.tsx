@@ -1,10 +1,10 @@
 import {
 	type LoaderFunctionArgs,
 	type MetaFunction,
-	json,
+	data as routeData,
 	redirect,
-} from "@remix-run/node";
-import { useLoaderData, useFetcher } from "@remix-run/react";
+} from "react-router";
+import { useLoaderData, useFetcher } from "react-router";
 import { eq } from "drizzle-orm";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
@@ -43,11 +43,11 @@ export async function loader({ params }: LoaderFunctionArgs) {
 		.where(eq(interviewers.id, params.id as string))
 		.get();
 	if (interviewer === undefined) {
-		return json({ interviewer: null }, { status: 404 });
+		return routeData({ interviewer: null }, { status: 404 });
 	}
-	return json({
+	return {
 		interviewer: interviewer,
-	});
+	};
 }
 
 export default function RoomPage() {
@@ -238,12 +238,10 @@ export default function RoomPage() {
 					</DialogHeader>
 					<div className="flex-1 overflow-hidden rounded-md border">
 						<iframe
+							title="Interview form"
 							src="https://docs.google.com/forms/d/e/1FAIpQLSdxvXkseIswWCzJurVKkZYLFf7hN62WNFOOAAL-ZBXtzF8YFg/viewform?usp=sharing&ouid=106221484184732111240"
-							width="100%"
-							height="100%"
-							frameBorder="0"
-							marginHeight={0}
-							marginWidth={0}
+							className="h-full w-full border-0"
+							loading="lazy"
 						>
 							Loading…
 						</iframe>
@@ -283,7 +281,7 @@ async function resetRoom(id: string) {
 		.where(eq(interviewers.id, id))
 		.execute();
 
-	return json({ id });
+	return { id };
 }
 
 export async function action({ request, params }: LoaderFunctionArgs) {
@@ -302,7 +300,7 @@ export async function action({ request, params }: LoaderFunctionArgs) {
 		return resetRoom(id);
 	}
 
-	return json({ id });
+	return { id };
 }
 
 async function updateInterviewee(id: string, form: FormData) {
@@ -321,7 +319,7 @@ async function updateInterviewee(id: string, form: FormData) {
 
 	console.log("Update complete"); // Debug log
 
-	return json({ id });
+	return { id };
 }
 
 async function quitRoom(id: string) {

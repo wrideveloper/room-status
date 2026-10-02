@@ -1,19 +1,23 @@
-import { vitePlugin as remix } from "@remix-run/dev";
+import { reactRouter } from "@react-router/dev/vite";
 import { defineConfig } from "vite";
-import tsconfigPaths from "vite-tsconfig-paths";
 
 export default defineConfig({
-	plugins: [
-		remix({
-			future: {
-				v3_fetcherPersist: true,
-				v3_relativeSplatPath: true,
-				v3_throwAbortReason: true,
-			},
-		}),
-		tsconfigPaths(),
-	],
+	plugins: [reactRouter()],
+	resolve: {
+		tsconfigPaths: true,
+	},
+	// Pre-bundle UI deps so dev does not optimize them lazily on first navigation.
+	optimizeDeps: {
+		include: [
+			"@radix-ui/react-alert-dialog",
+			"@radix-ui/react-dialog",
+			"@radix-ui/react-label",
+			"@radix-ui/react-select",
+			"@radix-ui/react-slot",
+			"lucide-react",
+		],
+	},
 	server: {
-		allowedHosts: ['frontend_web'],
-	}
+		allowedHosts: ["frontend_web"],
+	},
 });

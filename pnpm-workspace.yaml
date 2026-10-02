@@ -4,17 +4,14 @@
 allowBuilds:
   # Native SQLite addon — required at runtime.
   better-sqlite3: true
-  # Vite's bundler (via @remix-run/dev) needs its platform binary setup.
+  # Vite's bundler needs its platform binary setup.
   esbuild: true
   # Biome CLI binary setup (dev tooling).
   '@biomejs/biome': true
-  # Native resolver used by eslint-import-resolver-typescript.
-  unrs-resolver: true
 
-# Security overrides — deliberately restricted to SAME-MAJOR patch bumps so they
-# stay compatible with Remix 2 (which pins react-router 6.30.4 / turbo-stream 2.4.1).
-# A fully clean audit would require the Remix -> React Router v7 migration.
+# Security overrides (same-major, dev-only).
 overrides:
-  react-router@<6.30.6: ^6.30.6
-  react-router-dom@<6.30.6: ^6.30.6
+  # Patched esbuild (transitively pulled by @esbuild-kit via drizzle-kit).
+  esbuild@<=0.24.2: ^0.25.0
+  # DoS fix in transitive build tooling.
   minimatch@>=9.0.0 <9.0.7: ^9.0.9
