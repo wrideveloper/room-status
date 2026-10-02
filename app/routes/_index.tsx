@@ -1,7 +1,6 @@
-import { json, type MetaFunction } from "@remix-run/node";
-import { Link, useLoaderData } from "@remix-run/react";
+import { type MetaFunction } from "react-router";
+import { Link, useLoaderData } from "react-router";
 import { fetchInterviewersGroupedByRoom } from "~/lib/server/util.server.ts";
-import { useEventStream } from "@remix-sse/client";
 import type { Interviewer } from "~/lib/db/schema";
 import { intervalToDuration } from "date-fns";
 import { useEffect, useState } from "react";
@@ -16,17 +15,34 @@ export const meta: MetaFunction = () => {
 
 export async function loader() {
 	const interviewersByRoom = await fetchInterviewersGroupedByRoom();
-	return json({ interviewersByRoom });
+	return { interviewersByRoom };
 }
 
 export default function Index() {
 	const data = useLoaderData<typeof loader>();
-	const liveDataRaw = useEventStream("/sse/room-update", {
-		returnLatestOnly: true,
-	}) as string;
-	const liveData = JSON.parse(liveDataRaw) as {
+	const [liveData, setLiveData] = useState<{
 		interviewersByRoom: Record<string, Interviewer[]>;
-	} | null;
+	} | null>(null);
+
+	useEffect(() => {
+		let active = true;
+		const tick = async () => {
+			try {
+				const res = await fetch("/api/room-status");
+				if (res.ok && active) {
+					setLiveData(await res.json());
+				}
+			} catch {
+				// keep last known state on transient errors
+			}
+		};
+		tick();
+		const id = setInterval(tick, 2000);
+		return () => {
+			active = false;
+			clearInterval(id);
+		};
+	}, []);
 
 	return (
 		<div className="h-screen">
@@ -77,8 +93,6 @@ function InterviewerCard(props: InterviewerCardProps) {
 			: null,
 	);
 
-	console.log(duration, "INI DURATION")
-
 	useEffect(() => {
 		const interval = setInterval(() => {
 			if (props.interviewer.updated_at === null) {
@@ -101,8 +115,6 @@ function InterviewerCard(props: InterviewerCardProps) {
 		}, 1000);
 		return () => clearInterval(interval);
 	}, [props.interviewer.updated_at]);
-
-	console.log(props.interviewer)
 
 	return (
 		<div
