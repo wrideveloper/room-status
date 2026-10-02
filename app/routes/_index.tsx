@@ -52,7 +52,7 @@ export default function Index() {
 			<p className="text-center text-lg text-slate-700 mt-4">
 				Kalo merah berarti lagi nge-interview, kalo hijau berarti available buat nge-interview.
 			</p>
-			<Button className="mx-auto block mt-8">
+			<Button asChild className="mx-auto block mt-8">
 				<Link to="/room">INTERVIEWER MASUK SINI BANG</Link>
 			</Button>
 			<div className="grid grid-cols-2 gap-4 mx-auto max-w-screen-lg mt-10 px-8">
