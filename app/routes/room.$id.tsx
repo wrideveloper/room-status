@@ -240,11 +240,8 @@ export default function RoomPage() {
 						<iframe
 							title="Interview form"
 							src="https://docs.google.com/forms/d/e/1FAIpQLSdxvXkseIswWCzJurVKkZYLFf7hN62WNFOOAAL-ZBXtzF8YFg/viewform?usp=sharing&ouid=106221484184732111240"
-							width="100%"
-							height="100%"
-							frameBorder="0"
-							marginHeight={0}
-							marginWidth={0}
+							className="h-full w-full border-0"
+							loading="lazy"
 						>
 							Loading…
 						</iframe>
