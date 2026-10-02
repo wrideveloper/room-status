@@ -52,9 +52,11 @@ export default function Index() {
 			<p className="text-center text-lg text-slate-700 mt-4">
 				Kalo merah berarti lagi nge-interview, kalo hijau berarti available buat nge-interview.
 			</p>
-			<Button asChild className="mx-auto block mt-8">
-				<Link to="/room">INTERVIEWER MASUK SINI BANG</Link>
-			</Button>
+			<div className="mt-8 flex justify-center">
+				<Button asChild>
+					<Link to="/room">INTERVIEWER MASUK SINI BANG</Link>
+				</Button>
+			</div>
 			<div className="grid grid-cols-2 gap-4 mx-auto max-w-screen-lg mt-10 px-8">
 				{Object.entries(
 					liveData?.interviewersByRoom ?? data.interviewersByRoom,
