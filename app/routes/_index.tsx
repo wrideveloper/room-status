@@ -5,6 +5,7 @@ import type { Interviewer } from "~/lib/db/schema";
 import { intervalToDuration } from "date-fns";
 import { useEffect, useState } from "react";
 import { Button } from "~/components/ui/button";
+import { cn } from "~/lib/utils";
 
 export const meta: MetaFunction = () => {
 	return [
@@ -45,23 +46,30 @@ export default function Index() {
 	}, []);
 
 	return (
-		<div className="h-screen">
-			<h1 className="text-center mt-10 font-sans text-5xl font-bold text-slate-800">
+		<div className="h-screen pt-16">
+			<h1 className="text-center font-sans text-5xl font-bold text-slate-800">
 				Status Ruangan
 			</h1>
-			<p className="text-center text-lg text-slate-700 mt-4">
-				Kalo merah berarti lagi nge-interview, kalo hijau berarti available buat nge-interview.
-			</p>
+			<br />
+			<div className="w-100">
+				<div className="w-[fit-content] mx-auto">
+					<p className="text-center text-lg text-slate-700">
+						Kalau <b className="text-red-600">merah</b> berarti <u>lagi nge-interview</u> |
+						Kalau <b className="text-green-600">hijau</b> berarti <u>available</u> buat nge-interview |
+						Kalau <b className="text-yellow-600">kuning</b> berarti lagi <u>break</u>
+					</p>
+				</div>
+			</div>
 			<div className="mt-8 flex justify-center">
 				<Button asChild>
 					<Link to="/room">INTERVIEWER MASUK SINI BANG</Link>
 				</Button>
 			</div>
-			<div className="grid grid-cols-2 gap-4 mx-auto max-w-screen-lg mt-10 px-8">
+			<div className="grid grid-cols-1 md:grid-cols-2 gap-4 mx-auto max-w-screen-lg mt-10 px-8">
 				{Object.entries(
 					liveData?.interviewersByRoom ?? data.interviewersByRoom,
 				).map(([room, interviewers]) => (
-					<div key={room} className="border p-4 rounded-md">
+					<div key={room} className="border p-4 rounded-[1rem] bg-white">
 						<h2 className="text-2xl font-bold text-slate-700 uppercase text-center">
 							{room}
 						</h2>
@@ -118,15 +126,18 @@ function InterviewerCard(props: InterviewerCardProps) {
 		return () => clearInterval(interval);
 	}, [props.interviewer.updated_at, props.interviewer.interviewee]);
 
+	let color: String = props.interviewer.interviewee === null ? "bg-emerald-500" : "bg-red-500";
+
 	return (
 		<div
 			key={props.interviewer.id as string}
 			className="flex items-center gap-2"
 		>
 			<div className="flex items-center justify-center pr-2">
-				<div
-					className={`w-4 h-4 rounded-full ${props.interviewer.interviewee === null ? "bg-emerald-500" : "bg-red-500"}`}
-				/>
+				<span className="relative flex size-3">
+					<span className={`absolute inline-flex h-full w-full rounded-full ${cn(color, (props.interviewer.interviewee !== null) ? "animate-ping": "")} opacity-75`}></span>
+					<span className={`relative inline-flex size-3 rounded-full ${color}`}></span>
+				</span>
 			</div>
 			<div className="">
 				<p className="font-semibold text-slate-600 whitespace-nowrap">

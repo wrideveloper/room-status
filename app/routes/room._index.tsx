@@ -28,10 +28,10 @@ export const meta: MetaFunction = () => {
 
 export default function RoomPage() {
 	return (
-		<div className="">
-			<main className="mx-auto max-w-fit mt-10 p-6 border rounded-md bg-white">
-				<h1 className="font-semibold text-2xl text-slate-800">
-					Register as Interviewer
+		<div className="min-h-[90vh] flex justify-center items-center">
+			<main className="mx-auto w-[min(60%,360px)] p-6 border rounded-[1rem] bg-white">
+				<h1 className="text-center font-semibold text-2xl mt-2 text-slate-800">
+					Register
 				</h1>
 				<form method="POST" className="flex flex-col gap-4 mt-8">
 					<Label>
@@ -81,7 +81,12 @@ export default function RoomPage() {
 							</SelectContent>
 						</Select>
 					</Label>
-					<Button type="submit">Submit</Button>
+
+					<hr className="w-[60%] my-2 mx-auto h-[1px] bg-slate-600" />
+
+					<Button type="submit" className="font-bold">
+						SUBMIT
+					</Button>
 				</form>
 			</main>
 		</div>
@@ -91,11 +96,13 @@ export default function RoomPage() {
 export async function action(args: ActionFunctionArgs) {
 	const form = await args.request.formData();
 	const { id, name } = JSON.parse(form.get("name") as string);
+
 	// check if the interviewer already exists
 	const interviewer = await db
 		.select()
 		.from(interviewers)
 		.where(eq(interviewers.id, id));
+
 	if (interviewer.length > 0) return redirect(`/room/${id}`);
 
 	await db.insert(interviewers).values({
@@ -104,5 +111,6 @@ export async function action(args: ActionFunctionArgs) {
 		room: form.get("room") as string,
 		interviewee: null,
 	});
+
 	return redirect(`/room/${id}`);
 }

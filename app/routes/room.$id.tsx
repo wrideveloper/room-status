@@ -27,7 +27,10 @@ import {
 } from "~/components/ui/alert-dialog";
 import { db } from "~/lib/db/client";
 import { interviewers } from "~/lib/db/schema";
+import { parseEmbedURL } from "~/lib/utils";
 import { useEffect, useState } from "react";
+
+const TIME: number = 20 * 60;
 
 export const meta: MetaFunction = () => {
 	return [
@@ -42,12 +45,10 @@ export async function loader({ params }: LoaderFunctionArgs) {
 		.from(interviewers)
 		.where(eq(interviewers.id, params.id as string))
 		.get();
-	if (interviewer === undefined) {
-		return routeData({ interviewer: null }, { status: 404 });
-	}
-	return {
-		interviewer: interviewer,
-	};
+
+	if (interviewer === undefined) return routeData({ interviewer: null }, { status: 404 });
+
+	return {interviewer: interviewer};
 }
 
 export default function RoomPage() {
@@ -55,16 +56,13 @@ export default function RoomPage() {
 	const fetcher = useFetcher();
 
 	const [isDialogOpen, setIsDialogOpen] = useState(false);
-	const [timeLeft, setTimeLeft] = useState(20 * 60);
+	const [embedURL, setEmbedURL] = useState("");
+	const [timeLeft, setTimeLeft] = useState(TIME ?? 20);
 	const [isTimerRunning, setIsTimerRunning] = useState(false);
 	const [showTimeAlert, setShowTimeAlert] = useState(false);
 	const [hasShownAlert, setHasShownAlert] = useState(false);
 	const isFinished = data.interviewer?.interviewee === null;
 	const isTimeout = timeLeft <= 0;
-
-
-	console.log(isFinished, "IS FINISHED")
-	console.log(data, "INI DATA")
 
 	useEffect(() => {
 		if (!isTimerRunning || data.interviewer?.interviewee === null) return;
@@ -88,14 +86,21 @@ export default function RoomPage() {
 	const handleStartInterview = (e: React.MouseEvent<HTMLButtonElement>) => {
 		e.preventDefault();
 
-		const form = document.getElementById('data') as HTMLFormElement;
+		const form = document.getElementById("data") as HTMLFormElement;
 		const formData = new FormData(form);
+		const interviewee = formData.get("interviewee")?.toString().trim();
 
+		if (!interviewee) {
+			window.alert("Isi nama peserta dulu bro (•ˋ _ ˊ•)");
+			return;
+		}
+
+		setEmbedURL(parseEmbedURL(data.interviewer?.name ?? "", interviewee));
 		fetcher.submit(formData, { method: "post" });
 
 		setIsDialogOpen(true);
 		setIsTimerRunning(true);
-		setTimeLeft(20 * 60);
+		setTimeLeft(TIME ?? 20);
 		setHasShownAlert(false);
 	};
 
@@ -109,7 +114,6 @@ export default function RoomPage() {
 			method: "POST",
 			body: formData,
 		});
-		window.location.reload();
 	};
 
 	const formatTime = (seconds: number) => {
@@ -124,22 +128,22 @@ export default function RoomPage() {
 	};
 
 	return (
-		<div className="">
+		<div className="min-h-[90vh] flex justify-center items-center">
 
 			<form method="POST" id="quit" className="invisible">
 				<input type="hidden" name="_action" value="quit" />
 			</form>
 
-			<main className="mx-auto max-w-fit min-w-[24rem] mt-10 p-6 border rounded-md bg-white">
-				<h1 className="font-semibold text-2xl text-slate-800">
-					Room Data
+			<main className="mx-auto max-w-fit min-w-[24rem] mt-10 p-6 border rounded-[1rem] bg-white">
+				<span className="relative flex size-3 float-right">
+					<span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-500 opacity-75"></span>
+					<span className="relative inline-flex size-3 rounded-full bg-emerald-500"></span>
+				</span>
+				<h1 className="text-center font-semibold text-[1.8rem] mt-4 text-slate-800">
+					Welcome
 				</h1>
 
-				<form
-					className="flex flex-col gap-4 mt-8"
-					id="data"
-					method="POST"
-				>
+				<form className="flex flex-col gap-4 mt-6" id="data" method="POST">
 					<input type="hidden" name="_action" value="update" />
 					<Label>
 						<span className="block mb-2">Name</span>
@@ -147,6 +151,7 @@ export default function RoomPage() {
 							name="name"
 							type="text"
 							value={data.interviewer?.name}
+							className="bg-muted font-semibold"
 							readOnly
 						/>
 					</Label>
@@ -156,33 +161,37 @@ export default function RoomPage() {
 							<Input
 								name="interviewee"
 								type="text"
+								placeholder="Tanya namanya..."
 								defaultValue={
 									data.interviewer?.interviewee ?? ""
 								}
 							/>
-							{/* <Button
-								className="flex-1"
-								type="submit"
-								variant="secondary"
-							>
-								OK
-							</Button> */}
 						</div>
 					</Label>
 
-					<hr className="my-2 h-[1px] bg-slate-600" />
+					<hr className="w-[60%] my-2 mx-auto h-[1px] bg-slate-600" />
 
 					<div className="flex flex-col gap-2">
 						<Button
 							onClick={handleStartInterview}
-							className="w-full bg-yellow-500 hover:bg-yellow-600 text-slate-900 font-semibold"
+							variant="success"
+							className="font-bold"
 							type="button"
 						>
 							MULAI INTERVIEW
 						</Button>
 
 						<Button
-							className="flex-1"
+							onClick={() => {}}
+							variant="default"
+							className="font-bold"
+							type="button"
+						>
+							ISTIRAHAT DULS
+						</Button>
+
+						<Button
+							className="flex-1 mt-2 font-normal"
 							variant="outline"
 							form="quit"
 							type="submit"
@@ -195,7 +204,8 @@ export default function RoomPage() {
 
 			{/* Google Form */}
 			<Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-				<DialogContent className="max-w-4xl h-[90vh] flex flex-col">
+				<DialogContent onPointerDownOutside={(event) => event.preventDefault()}
+					className="max-w-4xl h-[90vh] flex flex-col">
 					<DialogHeader>
 						<div className="flex items-center justify-between">
 							<div>
@@ -214,14 +224,12 @@ export default function RoomPage() {
 								{!isFinished && (
 									<>
 										<div className="flex items-center gap-2">
-											<div className={`w-3 h-3 rounded-full ${isTimeout ? 'bg-red-500' : 'bg-green-500 animate-pulse'
-												}`} />
+											<div className={`w-3 h-3 rounded-full ${isTimeout ? 'bg-red-500' : 'bg-green-500 animate-pulse'}`} />
 											<span className="text-sm font-medium">
 												{isTimeout ? 'Timeout' : 'Live'}
 											</span>
 										</div>
-										<div className={`text-2xl font-bold tabular-nums ${isTimeout ? 'text-red-500' : 'text-green-500'
-											}`}>
+										<div className={`text-2xl font-bold tabular-nums ${isTimeout ? 'text-red-500' : 'text-green-500'}`}>
 											{formatTime(timeLeft)}
 										</div>
 									</>
@@ -237,13 +245,13 @@ export default function RoomPage() {
 						</div>
 					</DialogHeader>
 					<div className="flex-1 overflow-hidden rounded-md border">
-						<iframe
+					<iframe
 							title="Interview form"
-							src="https://docs.google.com/forms/d/e/1FAIpQLSdxvXkseIswWCzJurVKkZYLFf7hN62WNFOOAAL-ZBXtzF8YFg/viewform?usp=sharing&ouid=106221484184732111240"
+							src={embedURL}
 							className="h-full w-full border-0"
 							loading="lazy"
 						>
-							Loading…
+							Loading...
 						</iframe>
 					</div>
 				</DialogContent>
