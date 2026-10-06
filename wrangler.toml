@@ -1,0 +1,12 @@
+name = "room-status"
+main = "build/server/index.js" # Atau skrip entry point server kamu
+compatibility_date = "2024-01-01"
+
+# Mendefinisikan Durable Object untuk kelas RoomBroker
+[[durable_objects.bindings]]
+name = "ROOM_BROKER"
+class_name = "RoomBroker"
+
+[[migrations]]
+tag = "v1"
+new_classes = ["RoomBroker"]

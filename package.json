@@ -40,6 +40,7 @@
 	},
 	"devDependencies": {
 		"@biomejs/biome": "^1.9.4",
+		"@cloudflare/workers-types": "^5.20261005.1",
 		"@react-router/dev": "^8.4.0",
 		"@react-router/fs-routes": "^8.4.0",
 		"@types/better-sqlite3": "^9.6.0",
@@ -50,7 +51,8 @@
 		"postcss": "^8.5.28",
 		"tailwindcss": "^3.4.19",
 		"typescript": "^5.9.3",
-		"vite": "^8.3.2"
+		"vite": "^8.3.2",
+		"wrangler": "^4.147.0"
 	},
 	"engines": {
 		"node": ">=24.0.0"

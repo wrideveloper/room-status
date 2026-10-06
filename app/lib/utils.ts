@@ -5,14 +5,16 @@ export function cn(...inputs: ClassValue[]) {
 	return twMerge(clsx(inputs));
 }
 
+const GOOGLE_FORM_EMBED_URL = import.meta.env.GOOGLE_FORM_EMBED_URL;
+
 export function parseEmbedURL(interviewer: string, interviewee: string) {
-	const GOOGLE_FORM_EMBED_URL = "https://docs.google.com/forms/d/e/1FAIpQLSfdKfTmymzGDXm3NbnGEnMgsLZQpQ6h42pG3cyIvJ6P9nHbiw/viewform";
+	if (!GOOGLE_FORM_EMBED_URL) {
+		throw new Error("GOOGLE_FORM_EMBED_URL is not configured");
+	}
 
-	const params = new URLSearchParams({
-		embedded: "true",
-		"entry.1420316577": interviewer,
-		"entry.1074090088": interviewee,
-	});
-
-	return `${GOOGLE_FORM_EMBED_URL}?${params.toString()}`;
+	return GOOGLE_FORM_EMBED_URL
+		.replaceAll("{interviewer}", encodeURIComponent(interviewer))
+		.replaceAll("{interviewee}", encodeURIComponent(interviewee));
 }
+
+export const BREAK_STATUS = "__BREAK__";
