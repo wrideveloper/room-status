@@ -7,6 +7,11 @@ const DEFAULT_ROOM_ID = "0";
 
 async function fanOut(roomId: string, payload: string) {
 	const roomBroker = env?.ROOM_BROKER;
+	console.log("[notify] fanOut", {
+		roomId,
+		via: roomBroker ? "durable-object" : "in-memory",
+		payload,
+	});
 	if (!roomBroker) {
 		await broadcastToRoom(roomId, payload);
 		return;

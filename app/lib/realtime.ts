@@ -14,6 +14,7 @@ export function subscribeToRoom(
 	options: { onOpen?: () => void } = {},
 ): Cleanup {
 	const handle = (raw: string) => {
+		console.log("[realtime] message", raw);
 		try {
 			onMessage(JSON.parse(raw) as RoomMessage);
 		} catch {
@@ -23,16 +24,27 @@ export function subscribeToRoom(
 
 	if (import.meta.env.VITE_REALTIME === "ws") {
 		const protocol = window.location.protocol === "https:" ? "wss" : "ws";
-		const socket = new WebSocket(
-			`${protocol}://${window.location.host}/api/room/0/ws`,
-		);
-		socket.onopen = () => options.onOpen?.();
+		const url = `${protocol}://${window.location.host}/api/room/0/ws`;
+		console.log("[realtime] connecting websocket", url);
+		const socket = new WebSocket(url);
+		socket.onopen = () => {
+			console.log("[realtime] websocket open");
+			options.onOpen?.();
+		};
+		socket.onerror = (event) => console.error("[realtime] websocket error", event);
+		socket.onclose = (event) =>
+			console.log("[realtime] websocket close", event.code, event.reason);
 		socket.onmessage = (event) => handle(String(event.data));
 		return () => socket.close();
 	}
 
+	console.log("[realtime] connecting SSE");
 	const source = new EventSource("/api/room/0/sse");
-	source.onopen = () => options.onOpen?.();
+	source.onopen = () => {
+		console.log("[realtime] SSE open");
+		options.onOpen?.();
+	};
+	source.onerror = (event) => console.error("[realtime] SSE error", event);
 	source.onmessage = (event) => handle(event.data);
 	return () => source.close();
 }

@@ -6,9 +6,13 @@ import { DurableObject } from "cloudflare:workers";
 export class RoomBroker extends DurableObject<Env> {
 	async fetch(request: Request): Promise<Response> {
 		const url = new URL(request.url);
+		console.log("[RoomBroker] fetch", url.pathname, {
+			sockets: this.ctx.getWebSockets().length,
+		});
 
 		if (url.pathname === "/subscribe") {
 			if (request.headers.get("Upgrade")?.toLowerCase() !== "websocket") {
+				console.log("[RoomBroker] subscribe rejected: missing Upgrade header");
 				return new Response("Expected WebSocket upgrade", { status: 426 });
 			}
 
@@ -16,14 +20,22 @@ export class RoomBroker extends DurableObject<Env> {
 			const [client, server] = Object.values(pair);
 
 			this.ctx.acceptWebSocket(server);
+			console.log("[RoomBroker] accepted socket", {
+				total: this.ctx.getWebSockets().length,
+			});
 
 			return new Response(null, { status: 101, webSocket: client });
 		}
 
 		if (url.pathname === "/broadcast" && request.method === "POST") {
 			const message = await request.text();
+			const sockets = this.ctx.getWebSockets();
+			console.log("[RoomBroker] broadcast", {
+				sockets: sockets.length,
+				message,
+			});
 
-			for (const socket of this.ctx.getWebSockets()) {
+			for (const socket of sockets) {
 				try {
 					socket.send(message);
 				} catch {
