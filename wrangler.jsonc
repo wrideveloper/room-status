@@ -1,0 +1,24 @@
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "room-status",
+	"compatibility_date": "2026-10-07",
+	"compatibility_flags": ["nodejs_compat"],
+	"main": "./workers/app.ts",
+	"observability": {
+		"enabled": true
+	},
+	"d1_databases": [
+		{
+			"binding": "DB",
+			"database_name": "room-status-db",
+			"database_id": "00000000-0000-0000-0000-000000000000",
+			"migrations_dir": "app/lib/db/drizzle"
+		}
+	],
+	"durable_objects": {
+		"bindings": [{ "name": "ROOM_BROKER", "class_name": "RoomBroker" }]
+	},
+	"exports": {
+		"RoomBroker": { "type": "durable-object", "storage": "sqlite" }
+	}
+}

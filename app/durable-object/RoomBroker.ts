@@ -1,4 +1,6 @@
-export class RoomBroker {
+import { DurableObject } from "cloudflare:workers";
+
+export class RoomBroker extends DurableObject<Env> {
 	private sessions = new Set<ReadableStreamDefaultController<Uint8Array>>();
 
 	async fetch(request: Request): Promise<Response> {

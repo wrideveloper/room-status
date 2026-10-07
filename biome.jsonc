@@ -7,7 +7,13 @@
 	},
 	"files": {
 		"ignoreUnknown": false,
-		"ignore": ["build", ".react-router", "coverage"]
+		"ignore": [
+			"build",
+			".react-router",
+			"coverage",
+			"worker-configuration.d.ts",
+			"app/components/features/dino"
+		]
 	},
 	"formatter": {
 		"enabled": true,
