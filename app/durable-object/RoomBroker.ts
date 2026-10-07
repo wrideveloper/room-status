@@ -8,6 +8,10 @@ export class RoomBroker extends DurableObject<Env> {
 		const url = new URL(request.url);
 
 		if (url.pathname === "/subscribe") {
+			if (request.headers.get("Upgrade")?.toLowerCase() !== "websocket") {
+				return new Response("Expected WebSocket upgrade", { status: 426 });
+			}
+
 			const pair = new WebSocketPair();
 			const [client, server] = Object.values(pair);
 
