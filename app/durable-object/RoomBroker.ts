@@ -1,42 +1,29 @@
 import { DurableObject } from "cloudflare:workers";
 
+// Broadcast hub for a room. Uses the WebSocket Hibernation API so connections
+// survive object hibernation and the object can sleep while idle. Connections
+// are owned by the runtime (`this.ctx.getWebSockets()`), not by in-memory state.
 export class RoomBroker extends DurableObject<Env> {
-	private sessions = new Set<ReadableStreamDefaultController<Uint8Array>>();
-
 	async fetch(request: Request): Promise<Response> {
 		const url = new URL(request.url);
 
 		if (url.pathname === "/subscribe") {
-			let controllerRef: ReadableStreamDefaultController<Uint8Array> | undefined;
+			const pair = new WebSocketPair();
+			const [client, server] = Object.values(pair);
 
-			const stream = new ReadableStream<Uint8Array>({
-				start: (controller) => {
-					controllerRef = controller;
-					this.sessions.add(controller);
-				},
-				cancel: () => {
-					if (controllerRef) this.sessions.delete(controllerRef);
-				},
-			});
+			this.ctx.acceptWebSocket(server);
 
-			return new Response(stream, {
-				headers: {
-					"Content-Type": "text/event-stream",
-					"Cache-Control": "no-cache",
-					Connection: "keep-alive",
-				},
-			});
+			return new Response(null, { status: 101, webSocket: client });
 		}
 
 		if (url.pathname === "/broadcast" && request.method === "POST") {
-			const message = `data: ${await request.text()}\n\n`;
-			const encodedMessage = new TextEncoder().encode(message);
+			const message = await request.text();
 
-			for (const controller of this.sessions) {
+			for (const socket of this.ctx.getWebSockets()) {
 				try {
-					controller.enqueue(encodedMessage);
+					socket.send(message);
 				} catch {
-					this.sessions.delete(controller);
+					// socket already closed; the runtime will clean it up
 				}
 			}
 

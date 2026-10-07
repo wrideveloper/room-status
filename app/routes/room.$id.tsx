@@ -26,6 +26,7 @@ import {
 	AlertDialogTitle,
 } from "~/components/ui/alert-dialog";
 import { getDb } from "~/lib/db/client";
+import { subscribeToBroadcast } from "~/lib/realtime";
 import { interviewers } from "~/lib/db/schema";
 import { BREAK_STATUS, parseEmbedURL } from "~/lib/utils";
 import Dino from "~/components/features/dino";
@@ -80,16 +81,14 @@ export default function RoomPage() {
 
 		window.addEventListener("beforeunload", preventReload);
 
-		const eventSource = new EventSource("/api/room/0/sse");
-
-		eventSource.onmessage = (event) => {
-			setBroadcastMessage(event.data);
+		const unsubscribe = subscribeToBroadcast((message) => {
+			setBroadcastMessage(message);
 			setShowBroadcastAlert(true);
-		};
+		});
 
 	return () => {
 		window.removeEventListener("beforeunload", preventReload);
-		eventSource.close();
+		unsubscribe();
 	};
 
 	}, []);

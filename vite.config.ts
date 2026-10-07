@@ -10,6 +10,10 @@ const root = import.meta.dirname;
 
 export default defineConfig({
 	envPrefix: ["VITE_", "GOOGLE_FORM_"],
+	define: {
+		// Client realtime transport: WebSocket on Workers, SSE on Node/SQLite.
+		"import.meta.env.VITE_REALTIME": JSON.stringify(isWorkers ? "ws" : "sse"),
+	},
 	plugins: [
 		...(isWorkers ? [cloudflare({ viteEnvironment: { name: "ssr" } })] : []),
 		reactRouter(),
