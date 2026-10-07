@@ -4,13 +4,19 @@
 	"sideEffects": false,
 	"type": "module",
 	"scripts": {
+		"dev": "APP_TARGET=workers react-router dev",
+		"dev:sqlite": "APP_TARGET=sqlite react-router dev",
 		"build": "react-router build",
-		"dev": "react-router dev",
+		"build:sqlite": "APP_TARGET=sqlite react-router build",
+		"start": "react-router-serve ./build/server/index.js",
+		"deploy": "wrangler deploy",
+		"db:migrate:local": "wrangler d1 migrations apply room-status-db --local",
+		"db:migrate:remote": "wrangler d1 migrations apply room-status-db --remote",
+		"cf-typegen": "wrangler types",
+		"typecheck": "wrangler types && react-router typegen && tsc",
 		"lint": "biome lint .",
 		"lint:fix": "biome lint --write .",
-		"format": "biome format --write .",
-		"start": "react-router-serve ./build/server/index.js",
-		"typecheck": "react-router typegen && tsc"
+		"format": "biome format --write ."
 	},
 	"packageManager": "pnpm@12.6.0",
 	"dependencies": {
