@@ -1,147 +1,144 @@
-import type { MetaFunction } from "react-router";
-import { Link, useLoaderData } from "react-router";
-import { fetchInterviewersGroupedByRoom } from "~/lib/server/util.server.ts";
-import type { Interviewer } from "~/lib/db/schema";
-import { intervalToDuration } from "date-fns";
-import { useEffect, useState } from "react";
+import type { FormEvent } from "react";
+import { useState } from "react";
+import { Link } from "react-router";
+import { Megaphone, Monitor, UserRound } from "lucide-react";
+import {
+	Dialog,
+	DialogContent,
+	DialogDescription,
+	DialogFooter,
+	DialogHeader,
+	DialogTitle,
+} from "~/components/ui/dialog";
 import { Button } from "~/components/ui/button";
+import { Input } from "~/components/ui/input";
+import { Alert, type AlertVariant } from "~/components/ui/alert";
+export const meta = () => [
+	{ title: "Room Status" },
+	{ name: "description", content: "Room Status application" },
+];
 
-export const meta: MetaFunction = () => {
-	return [
-		{ title: "Room Status" },
-		{ name: "description", content: "Room Status" },
-	];
-};
+const navigationCards = [
+	{
+		icon: UserRound,
+		title: "INTERVIEWER",
+		subtitle: "Interviewer masuk sini bang",
+		to: "/register",
+	},
+	{
+		icon: Monitor,
+		title: "MONITORING",
+		subtitle: "Pantau status ruangan dan interviewer saat ini",
+		to: "/room",
+	},
+];
 
-export async function loader() {
-	const interviewersByRoom = await fetchInterviewersGroupedByRoom();
-	return { interviewersByRoom };
-}
+export default function LandingPage() {
+	const [isBroadcastOpen, setIsBroadcastOpen] = useState(false);
+	const [message, setMessage] = useState("");
+	const [isSending, setIsSending] = useState(false);
+	const [alert, setAlert] = useState<{ message: string; variant: AlertVariant } | null>(null);
+	const handleBroadcast = async (event: FormEvent<HTMLFormElement>) => {
+		event.preventDefault();
+		if (!message.trim() || isSending) return;
 
-export default function Index() {
-	const data = useLoaderData<typeof loader>();
-	const [liveData, setLiveData] = useState<{
-		interviewersByRoom: Record<string, Interviewer[]>;
-	} | null>(null);
+		setIsSending(true);
+		try {
+			const response = await fetch("/api/room/0/broadcast", {
+				method: "POST",
+				body: message.trim(),
+			});
 
-	useEffect(() => {
-		let active = true;
-		const tick = async () => {
-			try {
-				const res = await fetch("/api/room-status");
-				if (res.ok && active) {
-					setLiveData(await res.json());
-				}
-			} catch {
-				// keep last known state on transient errors
-			}
-		};
-		tick();
-		const id = setInterval(tick, 2000);
-		return () => {
-			active = false;
-			clearInterval(id);
-		};
-	}, []);
+			if (!response.ok) throw new Error("Broadcast failed");
+			setMessage("");
+			setIsBroadcastOpen(false);
+			setAlert({ message: "Broadcast berhasil dikirim.", variant: "success" });
+		} catch {
+			setAlert({ message: "Pesan broadcast gagal dikirim.", variant: "error" });
+		} finally {
+			setIsSending(false);
+		}
+	};
 
 	return (
-		<div className="h-screen">
-			<h1 className="text-center mt-10 font-sans text-5xl font-bold text-slate-800">
-				Status Ruangan
-			</h1>
-			<p className="text-center text-lg text-slate-700 mt-4">
-				Kalo merah berarti lagi nge-interview, kalo hijau berarti available buat nge-interview.
-			</p>
-			<div className="mt-8 flex justify-center">
-				<Button asChild>
-					<Link to="/room">INTERVIEWER MASUK SINI BANG</Link>
-				</Button>
-			</div>
-			<div className="grid grid-cols-2 gap-4 mx-auto max-w-screen-lg mt-10 px-8">
-				{Object.entries(
-					liveData?.interviewersByRoom ?? data.interviewersByRoom,
-				).map(([room, interviewers]) => (
-					<div key={room} className="border p-4 rounded-md">
-						<h2 className="text-2xl font-bold text-slate-700 uppercase text-center">
-							{room}
+		<main className="min-h-[90vh] px-6 py-1 flex justify-center items-center">
+			<div className="max-w-4xl">
+				<header className="text-center">
+					<h1 className="font-sans text-5xl font-bold tracking-tight sm:text-6xl">
+						Room Status
+					</h1>
+					<p className="mx-auto mt-4 max-w-xl text-lg text-slate-600">
+						Kelola interview dan pantau status ruangan dalam satu tempat 📝
+					</p>
+				</header>
+
+				<section className="mt-12 grid gap-5 md:grid-cols-3" aria-label="Navigasi utama">
+					{navigationCards.map(({ icon: Icon, title, subtitle, to }) => (
+						<Link
+							key={title}
+							to={to}
+							className="group rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-500 focus-visible:ring-offset-2"
+						>
+							<Icon className="h-8 w-8 text-slate-700" strokeWidth={1.8} />
+							<h2 className="mt-6 text-xl font-bold tracking-wide text-slate-800">
+								{title}
+							</h2>
+							<p className="mt-2 text-sm leading-6 text-slate-500">{subtitle}</p>
+						</Link>
+					))}
+
+					<button
+						type="button"
+						onClick={() => setIsBroadcastOpen(true)}
+						className="group rounded-2xl border border-slate-200 bg-white p-6 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-500 focus-visible:ring-offset-2"
+					>
+						<Megaphone className="h-8 w-8 text-slate-700" strokeWidth={1.8} />
+						<h2 className="mt-6 text-xl font-bold tracking-wide text-slate-800">
+							BROADCAST
 						</h2>
-						<hr className="my-2 h-[1px] bg-slate-600" />
-						<div className="flex flex-col gap-2">
-							{interviewers.map((interviewer) => (
-								<InterviewerCard
-									key={interviewer.id}
-									interviewer={interviewer}
-								/>
-							))}
+						<p className="mt-2 text-sm leading-6 text-slate-500">
+							Kirim pesan ke para interviewer
+						</p>
+					</button>
+				</section>
+			</div>
+
+			<Dialog open={isBroadcastOpen} onOpenChange={setIsBroadcastOpen}>
+				<DialogContent className="bg-slate-100">
+					<DialogHeader>
+						<DialogTitle className="text-[1.8rem] text-center">
+							Kirim broadcast
+						</DialogTitle>
+						<DialogDescription className="text-center text-md">
+							Pesan ini akan dikirim ke <b>semua</b> interviewer
+						</DialogDescription>
+					</DialogHeader>
+					<form onSubmit={handleBroadcast} className="space-y-5">
+						<div>
+							<label  htmlFor="message" className="text-sm block font-medium mb-3">Pesan</label>
+							<Input
+								id="message"
+								value={message}
+								onChange={(event) => setMessage(event.target.value)}
+								placeholder="Ganti gelombang woyy..."
+								autoFocus
+							/>
 						</div>
-					</div>
-				))}
-			</div>
-		</div>
-	);
-}
-
-type InterviewerCardProps = {
-	interviewer: Interviewer;
-};
-
-function InterviewerCard(props: InterviewerCardProps) {
-	const [duration, setDuration] = useState(() =>
-		props.interviewer.updated_at !== null
-			? intervalToDuration({
-				start: new Date(props.interviewer.updated_at),
-				end: new Date(),
-			})
-			: null,
-	);
-
-	useEffect(() => {
-		const interval = setInterval(() => {
-			if (props.interviewer.updated_at === null) {
-				setDuration(null);
-				return;
-			}
-
-			if (props.interviewer.interviewee === null) {
-				setDuration(null);
-				return
-			}
-
-			setDuration(() =>
-				intervalToDuration({
-					start: new Date(props.interviewer.updated_at as number),
-					end: new Date(),
-				}),
-			);
-
-		}, 1000);
-		return () => clearInterval(interval);
-	}, [props.interviewer.updated_at, props.interviewer.interviewee]);
-
-	return (
-		<div
-			key={props.interviewer.id as string}
-			className="flex items-center gap-2"
-		>
-			<div className="flex items-center justify-center pr-2">
-				<div
-					className={`w-4 h-4 rounded-full ${props.interviewer.interviewee === null ? "bg-emerald-500" : "bg-red-500"}`}
+						<DialogFooter>
+							<Button type="submit" disabled={!message.trim() || isSending}>
+								{isSending ? "Mengirim..." : "Kirim pesan"}
+							</Button>
+						</DialogFooter>
+					</form>
+				</DialogContent>
+			</Dialog>
+			{alert && (
+				<Alert
+					message={alert.message}
+					variant={alert.variant}
+					onClose={() => setAlert(null)}
 				/>
-			</div>
-			<div className="">
-				<p className="font-semibold text-slate-600 whitespace-nowrap">
-					{props.interviewer.name}
-				</p>
-				<p className="text-sm text-slate-500">
-					{props.interviewer.interviewee ?? "-"}
-				</p>
-			</div>
-			{duration !== null && (
-				<div className="ml-auto text-slate-700 font-medium">
-					{(duration.minutes ?? 0).toString().padStart(2, "0")}:
-					{(duration.seconds ?? 0).toString().padStart(2, "0")}
-				</div>
 			)}
-		</div>
+		</main>
 	);
 }
