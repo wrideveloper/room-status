@@ -54,7 +54,7 @@ export function Alert({
 				type="button"
 				aria-label="Tutup notifikasi"
 				onClick={onClose}
-				className="rounded p-0.5 opacity-70 transition-opacity hover:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-current"
+				className="rounded p-0.5 opacity-70 transition-opacity hover:opacity-100 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-current"
 			>
 				<X className="h-4 w-4" aria-hidden="true" />
 			</button>

@@ -77,7 +77,7 @@ export default function LandingPage() {
 						<Link
 							key={title}
 							to={to}
-							className="group rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-500 focus-visible:ring-offset-2"
+							className="group rounded-2xl border border-slate-200 bg-white p-6 shadow-xs transition hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-slate-500 focus-visible:ring-offset-2"
 						>
 							<Icon className="h-8 w-8 text-slate-700" strokeWidth={1.8} />
 							<h2 className="mt-6 text-xl font-bold tracking-wide text-slate-800">
@@ -90,7 +90,7 @@ export default function LandingPage() {
 					<button
 						type="button"
 						onClick={() => setIsBroadcastOpen(true)}
-						className="group rounded-2xl border border-slate-200 bg-white p-6 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-500 focus-visible:ring-offset-2"
+						className="group rounded-2xl border border-slate-200 bg-white p-6 text-left shadow-xs transition hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-slate-500 focus-visible:ring-offset-2"
 					>
 						<Megaphone className="h-8 w-8 text-slate-700" strokeWidth={1.8} />
 						<h2 className="mt-6 text-xl font-bold tracking-wide text-slate-800">

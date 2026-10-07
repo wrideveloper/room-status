@@ -1,5 +1,6 @@
 import { cloudflare } from "@cloudflare/vite-plugin";
 import { reactRouter } from "@react-router/dev/vite";
+import tailwindcss from "@tailwindcss/vite";
 import { defineConfig } from "vite";
 
 // Primary target is Cloudflare Workers. Set APP_TARGET=sqlite for the
@@ -15,6 +16,7 @@ export default defineConfig({
 		"import.meta.env.VITE_REALTIME": JSON.stringify(isWorkers ? "ws" : "sse"),
 	},
 	plugins: [
+		tailwindcss(),
 		...(isWorkers ? [cloudflare({ viteEnvironment: { name: "ssr" } })] : []),
 		reactRouter(),
 	],

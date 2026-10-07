@@ -120,7 +120,7 @@ export default function Index() {
  				onClick={handleResetRequest}
  				disabled={isResetting}
  				aria-label="Hapus semua entry interview"
- 				className="fixed bottom-6 right-6 z-10 inline-flex size-12 items-center justify-center rounded-xl bg-red-500 text-white shadow-lg transition hover:bg-red-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
+ 				className="fixed bottom-6 right-6 z-10 inline-flex size-12 items-center justify-center rounded-xl bg-red-500 text-white shadow-lg transition hover:bg-red-600 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
  			>
  				<RefreshCw className={isResetting ? "size-5 animate-spin" : "size-5"} aria-hidden="true" />
  			</button>
@@ -138,7 +138,7 @@ export default function Index() {
  							<p className="text-sm font-medium text-red-600">{resetError}</p>
  						)}
  					</AlertDialogHeader>
- 					<AlertDialogFooter className="!justify-center">
+ 					<AlertDialogFooter className="justify-center!">
  						<AlertDialogCancel disabled={isResetting}>Batal</AlertDialogCancel>
  						<AlertDialogAction
  							onClick={handleResetConfirmed}
