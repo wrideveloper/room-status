@@ -6,16 +6,15 @@ import { DurableObject } from "cloudflare:workers";
 export class RoomBroker extends DurableObject<Env> {
 	async fetch(request: Request): Promise<Response> {
 		const url = new URL(request.url);
+		const upgrade = request.headers.get("Upgrade")?.toLowerCase();
 		console.log("[RoomBroker] fetch", url.pathname, {
+			upgrade,
 			sockets: this.ctx.getWebSockets().length,
 		});
 
-		if (url.pathname === "/subscribe") {
-			if (request.headers.get("Upgrade")?.toLowerCase() !== "websocket") {
-				console.log("[RoomBroker] subscribe rejected: missing Upgrade header");
-				return new Response("Expected WebSocket upgrade", { status: 426 });
-			}
-
+		// Any WebSocket upgrade is a subscribe (the worker entry forwards the raw
+		// request, so the path is the original /api/room/:id/ws, not /subscribe).
+		if (upgrade === "websocket") {
 			const pair = new WebSocketPair();
 			const [client, server] = Object.values(pair);
 
