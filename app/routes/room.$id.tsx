@@ -25,7 +25,7 @@ import {
 	AlertDialogHeader,
 	AlertDialogTitle,
 } from "~/components/ui/alert-dialog";
-import { db } from "~/lib/db/client";
+import { getDb } from "~/lib/db/client";
 import { interviewers } from "~/lib/db/schema";
 import { BREAK_STATUS, parseEmbedURL } from "~/lib/utils";
 import Dino from "~/components/features/dino";
@@ -41,11 +41,11 @@ export const meta: MetaFunction = () => {
 };
 
 export async function loader({ params }: LoaderFunctionArgs) {
-	const interviewer = db
+	const db = getDb();
+	const [interviewer] = await db
 		.select()
 		.from(interviewers)
-		.where(eq(interviewers.id, params.id as string))
-		.get();
+		.where(eq(interviewers.id, params.id as string));
 
 	if (interviewer === undefined) return routeData({ interviewer: null }, { status: 404 });
 
@@ -407,6 +407,7 @@ export default function RoomPage() {
 }
 
 async function setBreakStatus(id: string) {
+	const db = getDb();
 	await db
 		.update(interviewers)
 		.set({
@@ -420,6 +421,7 @@ async function setBreakStatus(id: string) {
 }
 
 async function resetRoom(id: string) {
+	const db = getDb();
 	await db
 		.update(interviewers)
 		.set({
@@ -447,6 +449,7 @@ export async function action({ request, params }: LoaderFunctionArgs) {
 }
 
 async function updateInterviewee(id: string, form: FormData) {
+	const db = getDb();
 	const interviewee = form.get("interviewee") as string;
 
 	console.log("Updating interviewee:", { id, interviewee }); // Debug log
@@ -466,6 +469,7 @@ async function updateInterviewee(id: string, form: FormData) {
 }
 
 async function quitRoom(id: string) {
+	const db = getDb();
 	await db.delete(interviewers).where(eq(interviewers.id, id)).execute();
 	return redirect("/");
 }

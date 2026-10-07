@@ -1,7 +1,8 @@
-import { db } from "~/lib/db/client";
+import { getDb } from "~/lib/db/client";
 import { type Interviewer, interviewers } from "~/lib/db/schema";
 
 export async function fetchInterviewersGroupedByRoom() {
+	const db = getDb();
 	const interviewersData = await db.select().from(interviewers);
 	return interviewersData.reduce(
 		(acc, curr) => {

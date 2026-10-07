@@ -1,4 +1,4 @@
-import { db } from "~/lib/db/client";
+import { getDb } from "~/lib/db/client";
 import { interviewers } from "~/lib/db/schema";
 import { fetchInterviewersGroupedByRoom } from "~/lib/server/util.server.ts";
 
@@ -15,6 +15,7 @@ export async function action({ request }: { request: Request }) {
 		});
 	}
 
+	const db = getDb();
 	await db.delete(interviewers).execute();
 	return new Response(null, { status: 204 });
 }
