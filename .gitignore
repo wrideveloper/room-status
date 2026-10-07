@@ -3,6 +3,8 @@ node_modules
 /.cache
 /build
 /.react-router
+/.wrangler
 .env
+.dev.vars
 
 store.db
