@@ -1,4 +1,5 @@
 import {
+	type ActionFunctionArgs,
 	type LoaderFunctionArgs,
 	type MetaFunction,
 	data as routeData,
@@ -69,6 +70,8 @@ export default function RoomPage() {
  	const [hasShownAlert, setHasShownAlert] = useState(false);
  	const [showBroadcastAlert, setShowBroadcastAlert] = useState(false);
  	const [broadcastMessage, setBroadcastMessage] = useState("");
+	const [showMissingFormConfigAlert, setShowMissingFormConfigAlert] =
+		useState(false);
 	const isBreak = data.interviewer?.interviewee === BREAK_STATUS;
 	const isInterviewActive = Boolean(data.interviewer?.interviewee && !isBreak);
 	const isFinished = data.interviewer?.interviewee === null;
@@ -126,7 +129,13 @@ export default function RoomPage() {
  			return;
  		}
 
-		setEmbedURL(parseEmbedURL(data.interviewer?.name ?? "", interviewee));
+		const embedUrl = parseEmbedURL(data.interviewer?.name ?? "", interviewee);
+		if (embedUrl === null) {
+			setShowMissingFormConfigAlert(true);
+			return;
+		}
+
+		setEmbedURL(embedUrl);
 		fetcher.submit(formData, { method: "post" });
 
 		setIsDialogOpen(true);
@@ -384,6 +393,28 @@ export default function RoomPage() {
  				</AlertDialogContent>
  			</AlertDialog>
 
+			<AlertDialog
+				open={showMissingFormConfigAlert}
+				onOpenChange={setShowMissingFormConfigAlert}
+			>
+				<AlertDialogContent>
+					<AlertDialogHeader>
+						<AlertDialogTitle>Google Form belum dikonfigurasi</AlertDialogTitle>
+						<AlertDialogDescription>
+							Google Form belum dikonfigurasi. Hubungi panitia sebelum memulai
+							interview.
+						</AlertDialogDescription>
+					</AlertDialogHeader>
+					<AlertDialogFooter>
+						<AlertDialogAction
+							onClick={() => setShowMissingFormConfigAlert(false)}
+						>
+							Mengerti
+						</AlertDialogAction>
+					</AlertDialogFooter>
+				</AlertDialogContent>
+			</AlertDialog>
+
 			<AlertDialog open={showBroadcastAlert} onOpenChange={setShowBroadcastAlert}>
 				<AlertDialogContent className="py-6">
 					<AlertDialogHeader>
@@ -438,7 +469,7 @@ async function resetRoom(id: string) {
 	return { id };
 }
 
-export async function action({ request, params }: LoaderFunctionArgs) {
+export async function action({ request, params }: ActionFunctionArgs) {
 	const form = await request.formData();
 	const id = params.id as string;
 
@@ -455,8 +486,6 @@ export async function action({ request, params }: LoaderFunctionArgs) {
 async function updateInterviewee(id: string, form: FormData) {
 	const db = getDb();
 	const interviewee = form.get("interviewee") as string;
-
-	console.log("Updating interviewee:", { id, interviewee }); // Debug log
 
 	await db
 		.update(interviewers)

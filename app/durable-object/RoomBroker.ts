@@ -20,12 +20,11 @@ export class RoomBroker extends DurableObject<Env> {
 
 	async fetch(request: Request): Promise<Response> {
 		const url = new URL(request.url);
-		const upgrade = request.headers.get("Upgrade")?.toLowerCase();
 
 		// A WebSocket upgrade is a subscribe. The Worker entry forwards the raw
 		// request (preserving the Upgrade header), so the path here is the
 		// original /api/room/:id/ws.
-		if (upgrade === "websocket") {
+		if (request.headers.get("Upgrade")?.toLowerCase() === "websocket") {
 			const pair = new WebSocketPair();
 			const [client, server] = Object.values(pair);
 
@@ -44,10 +43,7 @@ export class RoomBroker extends DurableObject<Env> {
 	}
 
 	private fanOut(message: string) {
-		const sockets = this.ctx.getWebSockets();
-		console.log("[RoomBroker] broadcast", { sockets: sockets.length });
-
-		for (const socket of sockets) {
+		for (const socket of this.ctx.getWebSockets()) {
 			try {
 				socket.send(message);
 			} catch {
@@ -62,17 +58,12 @@ export class RoomBroker extends DurableObject<Env> {
 	}
 
 	async webSocketClose(ws: WebSocket, code: number, reason: string) {
-		console.log("[RoomBroker] socket closed", {
-			code,
-			reason,
-			remaining: this.ctx.getWebSockets().length,
-		});
 		// `web_socket_auto_reply_to_close` (compat date >= 2026-04-07) completes
 		// the close handshake, so ws.close() is optional here.
 		ws.close(code, reason);
 	}
 
 	async webSocketError(_ws: WebSocket, error: unknown) {
-		console.error("[RoomBroker] socket error", error);
+		console.error("RoomBroker socket error", error);
 	}
 }

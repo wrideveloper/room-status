@@ -7,14 +7,22 @@ export function cn(...inputs: ClassValue[]) {
 
 const GOOGLE_FORM_EMBED_URL = import.meta.env.GOOGLE_FORM_EMBED_URL;
 
-export function parseEmbedURL(interviewer: string, interviewee: string) {
-	if (!GOOGLE_FORM_EMBED_URL) {
-		throw new Error("GOOGLE_FORM_EMBED_URL is not configured");
-	}
+/**
+ * Builds the Google Form embed URL for an interview session.
+ *
+ * Returns `null` when `GOOGLE_FORM_EMBED_URL` is not configured, so callers can
+ * show a friendly message instead of throwing (which would break the button).
+ */
+export function parseEmbedURL(
+	interviewer: string,
+	interviewee: string,
+): string | null {
+	if (!GOOGLE_FORM_EMBED_URL) return null;
 
-	return GOOGLE_FORM_EMBED_URL
-		.replaceAll("{interviewer}", encodeURIComponent(interviewer))
-		.replaceAll("{interviewee}", encodeURIComponent(interviewee));
+	return GOOGLE_FORM_EMBED_URL.replaceAll(
+		"{interviewer}",
+		encodeURIComponent(interviewer),
+	).replaceAll("{interviewee}", encodeURIComponent(interviewee));
 }
 
 export const BREAK_STATUS = "__BREAK__";

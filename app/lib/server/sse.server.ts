@@ -16,10 +16,6 @@ export function subscribeToRoom(roomId: string) {
 		start: (controller) => {
 			controllerRef = controller;
 			sessions?.add(controller);
-			console.log("[sse] subscribe", {
-				roomId,
-				sessions: sessions?.size ?? 0,
-			});
 		},
 		cancel: () => {
 			if (!controllerRef || !sessions) return;
@@ -39,7 +35,6 @@ export function subscribeToRoom(roomId: string) {
 
 export async function broadcastToRoom(roomId: string, body: string) {
 	const sessions = sessionsByRoom.get(roomId);
-	console.log("[sse] broadcast", { roomId, sessions: sessions?.size ?? 0 });
 	if (!sessions) return;
 
 	const message = new TextEncoder().encode(`data: ${body}\n\n`);

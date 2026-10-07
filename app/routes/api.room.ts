@@ -1,7 +1,7 @@
 import { getDb } from "~/lib/db/client";
 import { interviewers } from "~/lib/db/schema";
 import { notifyRoomStatus } from "~/lib/server/notify.server";
-import { fetchInterviewersGroupedByRoom } from "~/lib/server/util.server.ts";
+import { fetchInterviewersGroupedByRoom } from "~/lib/server/util.server";
 
 export async function loader() {
 	const interviewersByRoom = await fetchInterviewersGroupedByRoom();

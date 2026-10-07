@@ -40,7 +40,6 @@ export default function LandingPage() {
 	const [alert, setAlert] = useState<{ message: string; variant: AlertVariant } | null>(null);
 	const handleBroadcast = async (event: FormEvent<HTMLFormElement>) => {
 		event.preventDefault();
-		console.log("[broadcast] submit", { message, isSending });
 		if (!message.trim() || isSending) return;
 
 		setIsSending(true);
@@ -50,13 +49,11 @@ export default function LandingPage() {
 				body: message.trim(),
 			});
 
-			console.log("[broadcast] response", response.status, response.ok);
 			if (!response.ok) throw new Error("Broadcast failed");
 			setMessage("");
 			setIsBroadcastOpen(false);
 			setAlert({ message: "Broadcast berhasil dikirim.", variant: "success" });
-		} catch (error) {
-			console.error("[broadcast] failed", error);
+		} catch {
 			setAlert({ message: "Pesan broadcast gagal dikirim.", variant: "error" });
 		} finally {
 			setIsSending(false);

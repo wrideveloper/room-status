@@ -1,6 +1,6 @@
 import type { MetaFunction } from "react-router";
 import { useLoaderData } from "react-router";
-import { fetchInterviewersGroupedByRoom } from "~/lib/server/util.server.ts";
+import { fetchInterviewersGroupedByRoom } from "~/lib/server/util.server";
 import type { Interviewer } from "~/lib/db/schema";
 import { BREAK_STATUS, cn } from "~/lib/utils";
 import { intervalToDuration } from "date-fns";

@@ -236,9 +236,6 @@ importers:
       tailwind-merge:
         specifier: ^2.6.1
         version: 2.6.1
-      tailwindcss-animate:
-        specifier: ^1.0.7
-        version: 1.0.7(tailwindcss@3.4.19(tsx@4.23.15)(yaml@2.9.1))
       zod:
         specifier: ^3.25.76
         version: 3.25.76
@@ -282,6 +279,9 @@ importers:
       tailwindcss:
         specifier: ^3.4.19
         version: 3.4.19(tsx@4.23.15)(yaml@2.9.1)
+      tailwindcss-animate:
+        specifier: ^1.0.7
+        version: 1.0.7(tailwindcss@3.4.19(tsx@4.23.15)(yaml@2.9.1))
       typescript:
         specifier: ^5.9.3
         version: 5.9.3

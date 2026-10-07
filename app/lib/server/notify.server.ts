@@ -1,17 +1,12 @@
 import { env } from "~/lib/platform";
 import { broadcastToRoom } from "~/lib/server/sse.server";
-import { fetchInterviewersGroupedByRoom } from "~/lib/server/util.server.ts";
+import { fetchInterviewersGroupedByRoom } from "~/lib/server/util.server";
 
 // All clients subscribe to the same channel (see app/lib/realtime.ts).
 const DEFAULT_ROOM_ID = "0";
 
 async function fanOut(roomId: string, payload: string) {
 	const roomBroker = env?.ROOM_BROKER;
-	console.log("[notify] fanOut", {
-		roomId,
-		via: roomBroker ? "durable-object" : "in-memory",
-		payload,
-	});
 	if (!roomBroker) {
 		await broadcastToRoom(roomId, payload);
 		return;
