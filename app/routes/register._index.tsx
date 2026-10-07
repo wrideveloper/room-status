@@ -15,6 +15,7 @@ import {
 } from "~/components/ui/select";
 import { Button } from "~/components/ui/button";
 import { getDb } from "~/lib/db/client";
+import { notifyRoomStatus } from "~/lib/server/notify.server";
 import { eq } from "drizzle-orm";
 import { interviewers } from "~/lib/db/schema";
 import { INTERVIEWERS } from "~/lib/data/interviewer";
@@ -113,5 +114,6 @@ export async function action(args: ActionFunctionArgs) {
 		interviewee: null,
 	});
 
+	await notifyRoomStatus();
 	return redirect(`/room/${id}`);
 }

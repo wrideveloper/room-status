@@ -16,6 +16,7 @@ import {
  	AlertDialogTitle,
 } from "~/components/ui/alert-dialog";
 import { useEffect, useState } from "react";
+import { subscribeToRoom } from "~/lib/realtime";
 
 export const meta: MetaFunction = () => {
 	return [
@@ -40,24 +41,24 @@ export default function Index() {
 
 
 	useEffect(() => {
-		let active = true;
-		const tick = async () => {
+		const resync = async () => {
 			try {
- 				const res = await fetch("/api/room");
-				if (res.ok && active) {
-					setLiveData(await res.json());
-				}
+				const res = await fetch("/api/room");
+				if (res.ok) setLiveData(await res.json());
 			} catch {
 				// keep last known state on transient errors
 			}
 		};
-		tick();
-		const id = setInterval(tick, 2000);
-		return () => {
-			active = false;
-			clearInterval(id);
-		};
- 	}, []);
+
+		return subscribeToRoom(
+			(message) => {
+				if (message.type === "status") {
+					setLiveData({ interviewersByRoom: message.interviewersByRoom });
+				}
+			},
+			{ onOpen: resync },
+		);
+	}, []);
 
  	const handleResetRequest = () => {
  		setResetError(null);

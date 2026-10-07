@@ -26,7 +26,8 @@ import {
 	AlertDialogTitle,
 } from "~/components/ui/alert-dialog";
 import { getDb } from "~/lib/db/client";
-import { subscribeToBroadcast } from "~/lib/realtime";
+import { subscribeToRoom } from "~/lib/realtime";
+import { notifyRoomStatus } from "~/lib/server/notify.server";
 import { interviewers } from "~/lib/db/schema";
 import { BREAK_STATUS, parseEmbedURL } from "~/lib/utils";
 import Dino from "~/components/features/dino";
@@ -81,9 +82,11 @@ export default function RoomPage() {
 
 		window.addEventListener("beforeunload", preventReload);
 
-		const unsubscribe = subscribeToBroadcast((message) => {
-			setBroadcastMessage(message);
-			setShowBroadcastAlert(true);
+		const unsubscribe = subscribeToRoom((message) => {
+			if (message.type === "broadcast") {
+				setBroadcastMessage(message.message);
+				setShowBroadcastAlert(true);
+			}
 		});
 
 	return () => {
@@ -416,6 +419,7 @@ async function setBreakStatus(id: string) {
 		.where(eq(interviewers.id, id))
 		.execute();
 
+	await notifyRoomStatus();
 	return { id };
 }
 
@@ -430,6 +434,7 @@ async function resetRoom(id: string) {
 		.where(eq(interviewers.id, id))
 		.execute();
 
+	await notifyRoomStatus();
 	return { id };
 }
 
@@ -462,7 +467,7 @@ async function updateInterviewee(id: string, form: FormData) {
 		.where(eq(interviewers.id, id))
 		.execute();
 
-	console.log("Update complete"); // Debug log
+	await notifyRoomStatus();
 
 	return { id };
 }
@@ -470,5 +475,6 @@ async function updateInterviewee(id: string, form: FormData) {
 async function quitRoom(id: string) {
 	const db = getDb();
 	await db.delete(interviewers).where(eq(interviewers.id, id)).execute();
+	await notifyRoomStatus();
 	return redirect("/");
 }

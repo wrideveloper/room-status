@@ -1,5 +1,6 @@
 import { getDb } from "~/lib/db/client";
 import { interviewers } from "~/lib/db/schema";
+import { notifyRoomStatus } from "~/lib/server/notify.server";
 import { fetchInterviewersGroupedByRoom } from "~/lib/server/util.server.ts";
 
 export async function loader() {
@@ -17,5 +18,6 @@ export async function action({ request }: { request: Request }) {
 
 	const db = getDb();
 	await db.delete(interviewers).execute();
+	await notifyRoomStatus();
 	return new Response(null, { status: 204 });
 }
