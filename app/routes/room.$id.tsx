@@ -33,6 +33,8 @@ import { interviewers } from "~/lib/db/schema";
 import { BREAK_STATUS, parseEmbedURL } from "~/lib/utils";
 import Dino from "~/components/features/dino";
 import { useEffect, useState } from "react";
+import { House, Monitor } from "lucide-react";
+import { NavLinks } from "~/components/nav-links";
 
 const TIME: number = 20 * 60;
 
@@ -185,6 +187,13 @@ export default function RoomPage() {
 	return (
 		<div className="min-h-[90vh] flex justify-center items-center">
 
+			<NavLinks
+				className="fixed top-4 left-4 z-20"
+				items={[
+					{ to: "/", label: "Home", icon: House },
+					{ to: "/room", label: "Monitoring", icon: Monitor },
+				]}
+			/>
 			<form method="POST" id="quit" className="invisible">
 				<input type="hidden" name="_action" value="quit" />
 			</form>

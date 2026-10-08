@@ -14,6 +14,8 @@ import {
 	SelectValue,
 } from "~/components/ui/select";
 import { Button } from "~/components/ui/button";
+import { NavLinks } from "~/components/nav-links";
+import { House, Monitor } from "lucide-react";
 import { getDb } from "~/lib/db/client";
 import { notifyRoomStatus } from "~/lib/server/notify.server";
 import { eq } from "drizzle-orm";
@@ -30,6 +32,13 @@ export const meta: MetaFunction = () => {
 export default function RoomPage() {
 	return (
 		<div className="min-h-[90vh] flex justify-center items-center">
+			<NavLinks
+				className="fixed top-4 left-4 z-20"
+				items={[
+					{ to: "/", label: "Home", icon: House },
+					{ to: "/room", label: "Monitoring", icon: Monitor },
+				]}
+			/>
 			<main className="mx-auto w-[min(60%,360px)] p-6 border rounded-[1rem] bg-white">
 				<h1 className="text-center font-semibold text-2xl mt-2 text-slate-800">
 					Register

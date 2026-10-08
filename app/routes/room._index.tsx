@@ -4,7 +4,7 @@ import { fetchInterviewersGroupedByRoom } from "~/lib/server/util.server";
 import type { Interviewer } from "~/lib/db/schema";
 import { BREAK_STATUS, cn } from "~/lib/utils";
 import { intervalToDuration } from "date-fns";
-import { RefreshCw } from "lucide-react";
+import { House, RefreshCw, UserRound } from "lucide-react";
 import {
  	AlertDialog,
  	AlertDialogAction,
@@ -17,6 +17,7 @@ import {
 } from "~/components/ui/alert-dialog";
 import { useEffect, useState } from "react";
 import { subscribeToRoom } from "~/lib/realtime";
+import { NavLinks } from "~/components/nav-links";
 
 export const meta: MetaFunction = () => {
 	return [
@@ -82,6 +83,13 @@ export default function Index() {
 
 	return (
 		<div className="h-screen pt-16">
+			<NavLinks
+				className="fixed top-4 left-4 z-20"
+				items={[
+					{ to: "/", label: "Home", icon: House },
+					{ to: "/register", label: "Register", icon: UserRound },
+				]}
+			/>
 			<h1 className="text-center font-sans text-5xl font-bold tracking-tight text-slate-800">
 				Status Ruangan
 			</h1>
