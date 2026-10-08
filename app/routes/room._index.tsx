@@ -19,6 +19,27 @@ import { useEffect, useState } from "react";
 import { subscribeToRoom } from "~/lib/realtime";
 import { NavLinks } from "~/components/nav-links";
 
+const LEGEND = [
+	{
+		dot: "bg-red-500",
+		color: "text-red-600",
+		label: "merah",
+		text: "lagi nge-interview",
+	},
+	{
+		dot: "bg-emerald-500",
+		color: "text-green-600",
+		label: "hijau",
+		text: "available",
+	},
+	{
+		dot: "bg-yellow-500",
+		color: "text-yellow-600",
+		label: "kuning",
+		text: "lagi break",
+	},
+];
+
 export const meta: MetaFunction = () => {
 	return [
 		{ title: "Room Status" },
@@ -82,7 +103,7 @@ export default function Index() {
  	};
 
 	return (
-		<div className="h-screen pt-16">
+		<div className="min-h-screen pt-16">
 			<NavLinks
 				className="fixed top-4 left-4 z-20"
 				items={[
@@ -90,19 +111,27 @@ export default function Index() {
 					{ to: "/register", label: "Register", icon: UserRound },
 				]}
 			/>
-			<h1 className="text-center font-sans text-5xl font-bold tracking-tight text-slate-800">
-				Status Ruangan
-			</h1>
-			<br />
-			<div className="w-100">
-				<div className="w-[fit-content] mx-auto">
-					<p className="text-center text-lg text-slate-700 mx-12">
-						<span className="inline-block">Kalau <b className="text-red-600">merah</b> berarti <u>lagi nge-interview</u> |&nbsp;</span>
-						<span className="inline-block">Kalau <b className="text-green-600">hijau</b> berarti <u>available</u> buat nge-interview |&nbsp;</span>
-						<span className="inline-block">Kalau <b className="text-yellow-600">kuning</b> berarti lagi <u>break</u></span>
-					</p>
-				</div>
-			</div>
+			<header className="mx-auto flex max-w-screen-lg flex-col items-center gap-3 px-6 text-center">
+				<h1 className="font-sans text-5xl font-bold tracking-tight text-slate-800">
+					Status Ruangan
+				</h1>
+				<p className="text-lg text-slate-600">
+					Pantau status tiap ruangan dan interviewer secara real-time.
+				</p>
+				<ul className="mt-2 flex flex-wrap items-center justify-center gap-x-6 gap-y-2">
+					{LEGEND.map(({ dot, color, label, text }) => (
+						<li key={label} className="flex items-center gap-2 text-slate-700">
+							<span
+								className={`inline-block size-3 rounded-full ${dot}`}
+								aria-hidden="true"
+							/>
+							<span>
+								<b className={color}>{label}</b> = {text}
+							</span>
+						</li>
+					))}
+				</ul>
+			</header>
 			<div className="grid grid-cols-1 md:grid-cols-2 gap-4 mx-auto max-w-screen-lg mt-10 px-8">
 				{Object.entries(
 					liveData?.interviewersByRoom ?? data.interviewersByRoom,
