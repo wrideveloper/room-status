@@ -2,9 +2,9 @@ import type { MetaFunction } from "react-router";
 import { useLoaderData } from "react-router";
 import { fetchInterviewersGroupedByRoom } from "~/lib/server/util.server";
 import type { Interviewer } from "~/lib/db/schema";
-import { BREAK_STATUS, cn } from "~/lib/utils";
+import { cn } from "~/lib/utils";
 import { intervalToDuration } from "date-fns";
-import { RefreshCw } from "lucide-react";
+import { House, RefreshCw, UserRound } from "lucide-react";
 import {
  	AlertDialog,
  	AlertDialogAction,
@@ -17,6 +17,28 @@ import {
 } from "~/components/ui/alert-dialog";
 import { useEffect, useState } from "react";
 import { subscribeToRoom } from "~/lib/realtime";
+import { NavLinks } from "~/components/nav-links";
+
+const LEGEND = [
+	{
+		dot: "bg-red-500",
+		color: "text-red-600",
+		label: "merah",
+		text: "lagi nge-interview",
+	},
+	{
+		dot: "bg-emerald-500",
+		color: "text-green-600",
+		label: "hijau",
+		text: "available",
+	},
+	{
+		dot: "bg-yellow-500",
+		color: "text-yellow-600",
+		label: "kuning",
+		text: "lagi break",
+	},
+];
 
 export const meta: MetaFunction = () => {
 	return [
@@ -81,20 +103,35 @@ export default function Index() {
  	};
 
 	return (
-		<div className="h-screen pt-16">
-			<h1 className="text-center font-sans text-5xl font-bold tracking-tight text-slate-800">
-				Status Ruangan
-			</h1>
-			<br />
-			<div className="w-100">
-				<div className="w-[fit-content] mx-auto">
-					<p className="text-center text-lg text-slate-700 mx-12">
-						<span className="inline-block">Kalau <b className="text-red-600">merah</b> berarti <u>lagi nge-interview</u> |&nbsp;</span>
-						<span className="inline-block">Kalau <b className="text-green-600">hijau</b> berarti <u>available</u> buat nge-interview |&nbsp;</span>
-						<span className="inline-block">Kalau <b className="text-yellow-600">kuning</b> berarti lagi <u>break</u></span>
-					</p>
-				</div>
-			</div>
+		<div className="min-h-screen pt-16">
+			<NavLinks
+				className="fixed top-4 left-4 z-20"
+				items={[
+					{ to: "/", label: "Home", icon: House },
+					{ to: "/register", label: "Register", icon: UserRound },
+				]}
+			/>
+			<header className="mx-auto flex max-w-screen-lg flex-col items-center gap-3 px-6 text-center">
+				<h1 className="font-sans text-5xl font-bold tracking-tight text-slate-800">
+					Status Ruangan
+				</h1>
+				<p className="text-lg text-slate-600">
+					Pantau status tiap ruangan dan interviewer secara real-time.
+				</p>
+				<ul className="mt-2 flex flex-wrap items-center justify-center gap-x-6 gap-y-2">
+					{LEGEND.map(({ dot, color, label, text }) => (
+						<li key={label} className="flex items-center gap-2 text-slate-700">
+							<span
+								className={`inline-block size-3 rounded-full ${dot}`}
+								aria-hidden="true"
+							/>
+							<span>
+								<b className={color}>{label}</b> = {text}
+							</span>
+						</li>
+					))}
+				</ul>
+			</header>
 			<div className="grid grid-cols-1 md:grid-cols-2 gap-4 mx-auto max-w-screen-lg mt-10 px-8">
 				{Object.entries(
 					liveData?.interviewersByRoom ?? data.interviewersByRoom,
@@ -159,44 +196,35 @@ type InterviewerCardProps = {
 };
 
 function InterviewerCard(props: InterviewerCardProps) {
+	const isInterviewing = props.interviewer.status === "interviewing";
+	const isBreak = props.interviewer.status === "break";
+	const startedAt = props.interviewer.interview_started_at;
+
 	const [duration, setDuration] = useState(() =>
-		props.interviewer.updated_at !== null
-			? intervalToDuration({
-				start: new Date(props.interviewer.updated_at),
-				end: new Date(),
-			})
+		isInterviewing && startedAt !== null
+			? intervalToDuration({ start: new Date(startedAt), end: new Date() })
 			: null,
 	);
 
 	useEffect(() => {
 		const interval = setInterval(() => {
-			if (props.interviewer.updated_at === null) {
+			if (!isInterviewing || startedAt === null) {
 				setDuration(null);
 				return;
 			}
 
-			if (props.interviewer.interviewee === null || props.interviewer.interviewee === BREAK_STATUS) {
-				setDuration(null);
-				return;
-			}
-
-			setDuration(() =>
-				intervalToDuration({
-					start: new Date(props.interviewer.updated_at as number),
-					end: new Date(),
-				}),
+			setDuration(
+				intervalToDuration({ start: new Date(startedAt), end: new Date() }),
 			);
-
 		}, 1000);
 		return () => clearInterval(interval);
-	}, [props.interviewer.updated_at, props.interviewer.interviewee]);
+	}, [isInterviewing, startedAt]);
 
-	const isBreak = props.interviewer.interviewee === BREAK_STATUS;
-	const color: string = props.interviewer.interviewee === null
-		? "bg-emerald-500"
-		: isBreak
-			? "bg-yellow-500"
-			: "bg-red-500";
+	const color: string = isBreak
+		? "bg-yellow-500"
+		: isInterviewing
+			? "bg-red-500"
+			: "bg-emerald-500";
 	return (
 		<div
 			key={props.interviewer.id as string}
@@ -204,7 +232,7 @@ function InterviewerCard(props: InterviewerCardProps) {
 		>
 			<div className="flex items-center justify-center pr-2">
 				<span className="relative flex size-3">
-					<span className={`absolute inline-flex h-full w-full rounded-full ${cn(color, (!isBreak && props.interviewer.interviewee !== null) ? "animate-ping" : "")} opacity-75`} />
+					<span className={`absolute inline-flex h-full w-full rounded-full ${cn(color, isInterviewing ? "animate-ping" : "")} opacity-75`} />
 					<span className={`relative inline-flex size-3 rounded-full ${color}`} />
 				</span>
 			</div>

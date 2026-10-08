@@ -2,7 +2,9 @@ import {
 	type ActionFunctionArgs,
 	type MetaFunction,
 	redirect,
+	useNavigate,
 } from "react-router";
+import { useEffect } from "react";
 import { Label } from "~/components/ui/label";
 import {
 	Select,
@@ -14,11 +16,14 @@ import {
 	SelectValue,
 } from "~/components/ui/select";
 import { Button } from "~/components/ui/button";
+import { NavLinks } from "~/components/nav-links";
+import { House, Monitor } from "lucide-react";
 import { getDb } from "~/lib/db/client";
 import { notifyRoomStatus } from "~/lib/server/notify.server";
 import { eq } from "drizzle-orm";
 import { interviewers } from "~/lib/db/schema";
 import { INTERVIEWERS } from "~/lib/data/interviewer";
+import { getStoredInterviewerId } from "~/lib/utils";
 
 export const meta: MetaFunction = () => {
 	return [
@@ -28,8 +33,23 @@ export const meta: MetaFunction = () => {
 };
 
 export default function RoomPage() {
+	const navigate = useNavigate();
+
+	// Already registered (and not on break/quit)? Go straight back to the room.
+	useEffect(() => {
+		const id = getStoredInterviewerId();
+		if (id) navigate(`/room/${id}`, { replace: true });
+	}, [navigate]);
+
 	return (
 		<div className="min-h-[90vh] flex justify-center items-center">
+			<NavLinks
+				className="fixed top-4 left-4 z-20"
+				items={[
+					{ to: "/", label: "Home", icon: House },
+					{ to: "/room", label: "Monitoring", icon: Monitor },
+				]}
+			/>
 			<main className="mx-auto w-[min(60%,360px)] p-6 border rounded-[1rem] bg-white">
 				<h1 className="text-center font-semibold text-2xl mt-2 text-slate-800">
 					Register
@@ -75,9 +95,9 @@ export default function RoomPage() {
 								<SelectGroup>
 									<SelectLabel>Ruangan</SelectLabel>
 									<SelectItem value="lpy-4">LPY - 4</SelectItem>
-									<SelectItem value="lkj-2">LKJ - 2</SelectItem>
 									<SelectItem value="lkj-3">LKJ - 3</SelectItem>
-									<SelectItem value="lerp">LERP</SelectItem>
+									<SelectItem value="lerp-1">LERP - 1</SelectItem>
+									<SelectItem value="lig-1">LIG - 1</SelectItem>
 								</SelectGroup>
 							</SelectContent>
 						</Select>
@@ -111,6 +131,7 @@ export async function action(args: ActionFunctionArgs) {
 		id,
 		name,
 		room: form.get("room") as string,
+		status: "idle",
 		interviewee: null,
 	});
 
