@@ -111,6 +111,7 @@ export async function action(args: ActionFunctionArgs) {
 		id,
 		name,
 		room: form.get("room") as string,
+		status: "idle",
 		interviewee: null,
 	});
 

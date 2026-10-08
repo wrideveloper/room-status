@@ -30,7 +30,7 @@ import { getDb } from "~/lib/db/client";
 import { subscribeToRoom } from "~/lib/realtime";
 import { notifyRoomStatus } from "~/lib/server/notify.server";
 import { interviewers } from "~/lib/db/schema";
-import { BREAK_STATUS, parseEmbedURL } from "~/lib/utils";
+import { parseEmbedURL } from "~/lib/utils";
 import Dino from "~/components/features/dino";
 import { useEffect, useState } from "react";
 
@@ -72,9 +72,10 @@ export default function RoomPage() {
  	const [broadcastMessage, setBroadcastMessage] = useState("");
 	const [showMissingFormConfigAlert, setShowMissingFormConfigAlert] =
 		useState(false);
-	const isBreak = data.interviewer?.interviewee === BREAK_STATUS;
-	const isInterviewActive = Boolean(data.interviewer?.interviewee && !isBreak);
-	const isFinished = data.interviewer?.interviewee === null;
+	const status = data.interviewer?.status ?? "idle";
+	const isBreak = status === "break";
+	const isInterviewActive = status === "interviewing";
+	const isFinished = status === "idle";
 	const isTimeout = timeLeft <= 0;
 
 	useEffect(() => {
@@ -444,7 +445,9 @@ async function setBreakStatus(id: string) {
 	await db
 		.update(interviewers)
 		.set({
-			interviewee: BREAK_STATUS,
+			status: "break",
+			interviewee: null,
+			interview_started_at: null,
 			updated_at: Date.now(),
 		})
 		.where(eq(interviewers.id, id))
@@ -459,7 +462,9 @@ async function resetRoom(id: string) {
 	await db
 		.update(interviewers)
 		.set({
+			status: "idle",
 			interviewee: null,
+			interview_started_at: null,
 			updated_at: Date.now(),
 		})
 		.where(eq(interviewers.id, id))
@@ -490,7 +495,9 @@ async function updateInterviewee(id: string, form: FormData) {
 	await db
 		.update(interviewers)
 		.set({
+			status: "interviewing",
 			interviewee: interviewee,
+			interview_started_at: Date.now(),
 			updated_at: Date.now(),
 		})
 		.where(eq(interviewers.id, id))

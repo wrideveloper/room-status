@@ -2,7 +2,7 @@ import type { MetaFunction } from "react-router";
 import { useLoaderData } from "react-router";
 import { fetchInterviewersGroupedByRoom } from "~/lib/server/util.server";
 import type { Interviewer } from "~/lib/db/schema";
-import { BREAK_STATUS, cn } from "~/lib/utils";
+import { cn } from "~/lib/utils";
 import { intervalToDuration } from "date-fns";
 import { RefreshCw } from "lucide-react";
 import {
@@ -159,44 +159,35 @@ type InterviewerCardProps = {
 };
 
 function InterviewerCard(props: InterviewerCardProps) {
+	const isInterviewing = props.interviewer.status === "interviewing";
+	const isBreak = props.interviewer.status === "break";
+	const startedAt = props.interviewer.interview_started_at;
+
 	const [duration, setDuration] = useState(() =>
-		props.interviewer.updated_at !== null
-			? intervalToDuration({
-				start: new Date(props.interviewer.updated_at),
-				end: new Date(),
-			})
+		isInterviewing && startedAt !== null
+			? intervalToDuration({ start: new Date(startedAt), end: new Date() })
 			: null,
 	);
 
 	useEffect(() => {
 		const interval = setInterval(() => {
-			if (props.interviewer.updated_at === null) {
+			if (!isInterviewing || startedAt === null) {
 				setDuration(null);
 				return;
 			}
 
-			if (props.interviewer.interviewee === null || props.interviewer.interviewee === BREAK_STATUS) {
-				setDuration(null);
-				return;
-			}
-
-			setDuration(() =>
-				intervalToDuration({
-					start: new Date(props.interviewer.updated_at as number),
-					end: new Date(),
-				}),
+			setDuration(
+				intervalToDuration({ start: new Date(startedAt), end: new Date() }),
 			);
-
 		}, 1000);
 		return () => clearInterval(interval);
-	}, [props.interviewer.updated_at, props.interviewer.interviewee]);
+	}, [isInterviewing, startedAt]);
 
-	const isBreak = props.interviewer.interviewee === BREAK_STATUS;
-	const color: string = props.interviewer.interviewee === null
-		? "bg-emerald-500"
-		: isBreak
-			? "bg-yellow-500"
-			: "bg-red-500";
+	const color: string = isBreak
+		? "bg-yellow-500"
+		: isInterviewing
+			? "bg-red-500"
+			: "bg-emerald-500";
 	return (
 		<div
 			key={props.interviewer.id as string}
@@ -204,7 +195,7 @@ function InterviewerCard(props: InterviewerCardProps) {
 		>
 			<div className="flex items-center justify-center pr-2">
 				<span className="relative flex size-3">
-					<span className={`absolute inline-flex h-full w-full rounded-full ${cn(color, (!isBreak && props.interviewer.interviewee !== null) ? "animate-ping" : "")} opacity-75`} />
+					<span className={`absolute inline-flex h-full w-full rounded-full ${cn(color, isInterviewing ? "animate-ping" : "")} opacity-75`} />
 					<span className={`relative inline-flex size-3 rounded-full ${color}`} />
 				</span>
 			</div>

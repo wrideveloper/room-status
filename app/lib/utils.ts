@@ -24,5 +24,3 @@ export function parseEmbedURL(
 		encodeURIComponent(interviewer),
 	).replaceAll("{interviewee}", encodeURIComponent(interviewee));
 }
-
-export const BREAK_STATUS = "__BREAK__";
