@@ -95,9 +95,9 @@ export default function RoomPage() {
 								<SelectGroup>
 									<SelectLabel>Ruangan</SelectLabel>
 									<SelectItem value="lpy-4">LPY - 4</SelectItem>
-									<SelectItem value="lkj-2">LKJ - 2</SelectItem>
 									<SelectItem value="lkj-3">LKJ - 3</SelectItem>
-									<SelectItem value="lerp">LERP</SelectItem>
+									<SelectItem value="lerp-1">LERP - 1</SelectItem>
+									<SelectItem value="lig-1">LIG - 1</SelectItem>
 								</SelectGroup>
 							</SelectContent>
 						</Select>
