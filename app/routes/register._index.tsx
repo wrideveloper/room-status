@@ -14,7 +14,8 @@ import {
 	SelectValue,
 } from "~/components/ui/select";
 import { Button } from "~/components/ui/button";
-import { db } from "~/lib/db/client";
+import { getDb } from "~/lib/db/client";
+import { notifyRoomStatus } from "~/lib/server/notify.server";
 import { eq } from "drizzle-orm";
 import { interviewers } from "~/lib/db/schema";
 import { INTERVIEWERS } from "~/lib/data/interviewer";
@@ -94,6 +95,7 @@ export default function RoomPage() {
 }
 
 export async function action(args: ActionFunctionArgs) {
+	const db = getDb();
 	const form = await args.request.formData();
 	const { id, name } = JSON.parse(form.get("name") as string);
 
@@ -112,5 +114,6 @@ export async function action(args: ActionFunctionArgs) {
 		interviewee: null,
 	});
 
+	await notifyRoomStatus();
 	return redirect(`/room/${id}`);
 }

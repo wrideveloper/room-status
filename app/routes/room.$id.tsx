@@ -1,4 +1,5 @@
 import {
+	type ActionFunctionArgs,
 	type LoaderFunctionArgs,
 	type MetaFunction,
 	data as routeData,
@@ -25,7 +26,9 @@ import {
 	AlertDialogHeader,
 	AlertDialogTitle,
 } from "~/components/ui/alert-dialog";
-import { db } from "~/lib/db/client";
+import { getDb } from "~/lib/db/client";
+import { subscribeToRoom } from "~/lib/realtime";
+import { notifyRoomStatus } from "~/lib/server/notify.server";
 import { interviewers } from "~/lib/db/schema";
 import { BREAK_STATUS, parseEmbedURL } from "~/lib/utils";
 import Dino from "~/components/features/dino";
@@ -41,11 +44,11 @@ export const meta: MetaFunction = () => {
 };
 
 export async function loader({ params }: LoaderFunctionArgs) {
-	const interviewer = db
+	const db = getDb();
+	const [interviewer] = await db
 		.select()
 		.from(interviewers)
-		.where(eq(interviewers.id, params.id as string))
-		.get();
+		.where(eq(interviewers.id, params.id as string));
 
 	if (interviewer === undefined) return routeData({ interviewer: null }, { status: 404 });
 
@@ -67,6 +70,8 @@ export default function RoomPage() {
  	const [hasShownAlert, setHasShownAlert] = useState(false);
  	const [showBroadcastAlert, setShowBroadcastAlert] = useState(false);
  	const [broadcastMessage, setBroadcastMessage] = useState("");
+	const [showMissingFormConfigAlert, setShowMissingFormConfigAlert] =
+		useState(false);
 	const isBreak = data.interviewer?.interviewee === BREAK_STATUS;
 	const isInterviewActive = Boolean(data.interviewer?.interviewee && !isBreak);
 	const isFinished = data.interviewer?.interviewee === null;
@@ -80,16 +85,16 @@ export default function RoomPage() {
 
 		window.addEventListener("beforeunload", preventReload);
 
-		const eventSource = new EventSource("/api/room/0/sse");
-
-		eventSource.onmessage = (event) => {
-			setBroadcastMessage(event.data);
-			setShowBroadcastAlert(true);
-		};
+		const unsubscribe = subscribeToRoom((message) => {
+			if (message.type === "broadcast") {
+				setBroadcastMessage(message.message);
+				setShowBroadcastAlert(true);
+			}
+		});
 
 	return () => {
 		window.removeEventListener("beforeunload", preventReload);
-		eventSource.close();
+		unsubscribe();
 	};
 
 	}, []);
@@ -124,7 +129,13 @@ export default function RoomPage() {
  			return;
  		}
 
-		setEmbedURL(parseEmbedURL(data.interviewer?.name ?? "", interviewee));
+		const embedUrl = parseEmbedURL(data.interviewer?.name ?? "", interviewee);
+		if (embedUrl === null) {
+			setShowMissingFormConfigAlert(true);
+			return;
+		}
+
+		setEmbedURL(embedUrl);
 		fetcher.submit(formData, { method: "post" });
 
 		setIsDialogOpen(true);
@@ -382,6 +393,28 @@ export default function RoomPage() {
  				</AlertDialogContent>
  			</AlertDialog>
 
+			<AlertDialog
+				open={showMissingFormConfigAlert}
+				onOpenChange={setShowMissingFormConfigAlert}
+			>
+				<AlertDialogContent>
+					<AlertDialogHeader>
+						<AlertDialogTitle>Google Form belum dikonfigurasi</AlertDialogTitle>
+						<AlertDialogDescription>
+							Google Form belum dikonfigurasi. Hubungi panitia sebelum memulai
+							interview.
+						</AlertDialogDescription>
+					</AlertDialogHeader>
+					<AlertDialogFooter>
+						<AlertDialogAction
+							onClick={() => setShowMissingFormConfigAlert(false)}
+						>
+							Mengerti
+						</AlertDialogAction>
+					</AlertDialogFooter>
+				</AlertDialogContent>
+			</AlertDialog>
+
 			<AlertDialog open={showBroadcastAlert} onOpenChange={setShowBroadcastAlert}>
 				<AlertDialogContent className="py-6">
 					<AlertDialogHeader>
@@ -407,6 +440,7 @@ export default function RoomPage() {
 }
 
 async function setBreakStatus(id: string) {
+	const db = getDb();
 	await db
 		.update(interviewers)
 		.set({
@@ -416,10 +450,12 @@ async function setBreakStatus(id: string) {
 		.where(eq(interviewers.id, id))
 		.execute();
 
+	await notifyRoomStatus();
 	return { id };
 }
 
 async function resetRoom(id: string) {
+	const db = getDb();
 	await db
 		.update(interviewers)
 		.set({
@@ -429,10 +465,11 @@ async function resetRoom(id: string) {
 		.where(eq(interviewers.id, id))
 		.execute();
 
+	await notifyRoomStatus();
 	return { id };
 }
 
-export async function action({ request, params }: LoaderFunctionArgs) {
+export async function action({ request, params }: ActionFunctionArgs) {
 	const form = await request.formData();
 	const id = params.id as string;
 
@@ -447,9 +484,8 @@ export async function action({ request, params }: LoaderFunctionArgs) {
 }
 
 async function updateInterviewee(id: string, form: FormData) {
+	const db = getDb();
 	const interviewee = form.get("interviewee") as string;
-
-	console.log("Updating interviewee:", { id, interviewee }); // Debug log
 
 	await db
 		.update(interviewers)
@@ -460,12 +496,14 @@ async function updateInterviewee(id: string, form: FormData) {
 		.where(eq(interviewers.id, id))
 		.execute();
 
-	console.log("Update complete"); // Debug log
+	await notifyRoomStatus();
 
 	return { id };
 }
 
 async function quitRoom(id: string) {
+	const db = getDb();
 	await db.delete(interviewers).where(eq(interviewers.id, id)).execute();
+	await notifyRoomStatus();
 	return redirect("/");
 }

@@ -24,7 +24,9 @@
 		"forceConsistentCasingInFileNames": true,
 		"baseUrl": ".",
 		"paths": {
-			"~/*": ["./app/*"]
+			"~/*": ["./app/*"],
+			"#platform": ["./app/lib/platform.workers.ts"],
+			"#db": ["./app/lib/db/client.workers.ts"]
 		},
 		"rootDirs": [".", "./.react-router/types"],
 		"noEmit": true

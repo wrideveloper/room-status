@@ -1,46 +1,69 @@
-export class RoomBroker {
-	private sessions = new Set<ReadableStreamDefaultController<Uint8Array>>();
+import { DurableObject } from "cloudflare:workers";
+
+// Broadcast hub for a room.
+//
+// Uses the WebSocket Hibernation API: `ctx.acceptWebSocket()` tells the runtime
+// the connection is hibernatable, so the Durable Object can be evicted from
+// memory while clients stay connected, and is re-initialized when an event
+// arrives. We do not keep per-connection state, so `ctx.getWebSockets()` is the
+// source of truth for connected clients (no `sessions` map needed).
+export class RoomBroker extends DurableObject<Env> {
+	constructor(ctx: DurableObjectState, env: Env) {
+		super(ctx, env);
+
+		// App-level "ping"/"pong" answered by the runtime without waking the
+		// object from hibernation.
+		this.ctx.setWebSocketAutoResponse(
+			new WebSocketRequestResponsePair("ping", "pong"),
+		);
+	}
 
 	async fetch(request: Request): Promise<Response> {
 		const url = new URL(request.url);
 
-		if (url.pathname === "/subscribe") {
-			let controllerRef: ReadableStreamDefaultController<Uint8Array> | undefined;
+		// A WebSocket upgrade is a subscribe. The Worker entry forwards the raw
+		// request (preserving the Upgrade header), so the path here is the
+		// original /api/room/:id/ws.
+		if (request.headers.get("Upgrade")?.toLowerCase() === "websocket") {
+			const pair = new WebSocketPair();
+			const [client, server] = Object.values(pair);
 
-			const stream = new ReadableStream<Uint8Array>({
-				start: (controller) => {
-					controllerRef = controller;
-					this.sessions.add(controller);
-				},
-				cancel: () => {
-					if (controllerRef) this.sessions.delete(controllerRef);
-				},
-			});
+			// Hibernatable accept: the runtime owns the connection across evictions.
+			this.ctx.acceptWebSocket(server);
 
-			return new Response(stream, {
-				headers: {
-					"Content-Type": "text/event-stream",
-					"Cache-Control": "no-cache",
-					Connection: "keep-alive",
-				},
-			});
+			return new Response(null, { status: 101, webSocket: client });
 		}
 
 		if (url.pathname === "/broadcast" && request.method === "POST") {
-			const message = `data: ${await request.text()}\n\n`;
-			const encodedMessage = new TextEncoder().encode(message);
-
-			for (const controller of this.sessions) {
-				try {
-					controller.enqueue(encodedMessage);
-				} catch {
-					this.sessions.delete(controller);
-				}
-			}
-
+			this.fanOut(await request.text());
 			return new Response("OK");
 		}
 
 		return new Response("Not found", { status: 404 });
+	}
+
+	private fanOut(message: string) {
+		for (const socket of this.ctx.getWebSockets()) {
+			try {
+				socket.send(message);
+			} catch {
+				// closed socket; the runtime cleans it up
+			}
+		}
+	}
+
+	async webSocketMessage(_ws: WebSocket, message: string | ArrayBuffer) {
+		// Broadcast-only hub: relay any client message to everyone.
+		this.fanOut(typeof message === "string" ? message : "[binary]");
+	}
+
+	async webSocketClose(ws: WebSocket, code: number, reason: string) {
+		// `web_socket_auto_reply_to_close` (compat date >= 2026-04-07) completes
+		// the close handshake, so ws.close() is optional here.
+		ws.close(code, reason);
+	}
+
+	async webSocketError(_ws: WebSocket, error: unknown) {
+		console.error("RoomBroker socket error", error);
 	}
 }

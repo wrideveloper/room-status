@@ -1,6 +1,6 @@
 import type { MetaFunction } from "react-router";
 import { useLoaderData } from "react-router";
-import { fetchInterviewersGroupedByRoom } from "~/lib/server/util.server.ts";
+import { fetchInterviewersGroupedByRoom } from "~/lib/server/util.server";
 import type { Interviewer } from "~/lib/db/schema";
 import { BREAK_STATUS, cn } from "~/lib/utils";
 import { intervalToDuration } from "date-fns";
@@ -16,6 +16,7 @@ import {
  	AlertDialogTitle,
 } from "~/components/ui/alert-dialog";
 import { useEffect, useState } from "react";
+import { subscribeToRoom } from "~/lib/realtime";
 
 export const meta: MetaFunction = () => {
 	return [
@@ -40,24 +41,24 @@ export default function Index() {
 
 
 	useEffect(() => {
-		let active = true;
-		const tick = async () => {
+		const resync = async () => {
 			try {
- 				const res = await fetch("/api/room");
-				if (res.ok && active) {
-					setLiveData(await res.json());
-				}
+				const res = await fetch("/api/room");
+				if (res.ok) setLiveData(await res.json());
 			} catch {
 				// keep last known state on transient errors
 			}
 		};
-		tick();
-		const id = setInterval(tick, 2000);
-		return () => {
-			active = false;
-			clearInterval(id);
-		};
- 	}, []);
+
+		return subscribeToRoom(
+			(message) => {
+				if (message.type === "status") {
+					setLiveData({ interviewersByRoom: message.interviewersByRoom });
+				}
+			},
+			{ onOpen: resync },
+		);
+	}, []);
 
  	const handleResetRequest = () => {
  		setResetError(null);
@@ -119,7 +120,7 @@ export default function Index() {
  				onClick={handleResetRequest}
  				disabled={isResetting}
  				aria-label="Hapus semua entry interview"
- 				className="fixed bottom-6 right-6 z-10 inline-flex size-12 items-center justify-center rounded-xl bg-red-500 text-white shadow-lg transition hover:bg-red-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
+ 				className="fixed bottom-6 right-6 z-10 inline-flex size-12 items-center justify-center rounded-xl bg-red-500 text-white shadow-lg transition hover:bg-red-600 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
  			>
  				<RefreshCw className={isResetting ? "size-5 animate-spin" : "size-5"} aria-hidden="true" />
  			</button>
@@ -137,7 +138,7 @@ export default function Index() {
  							<p className="text-sm font-medium text-red-600">{resetError}</p>
  						)}
  					</AlertDialogHeader>
- 					<AlertDialogFooter className="!justify-center">
+ 					<AlertDialogFooter className="justify-center!">
  						<AlertDialogCancel disabled={isResetting}>Batal</AlertDialogCancel>
  						<AlertDialogAction
  							onClick={handleResetConfirmed}

@@ -3,6 +3,9 @@ node_modules
 /.cache
 /build
 /.react-router
+/.wrangler
+worker-configuration.d.ts
 .env
+.dev.vars
 
 store.db
