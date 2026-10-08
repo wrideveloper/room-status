@@ -5,7 +5,7 @@ import {
 	data as routeData,
 	redirect,
 } from "react-router";
-import { useLoaderData, useFetcher } from "react-router";
+import { useLoaderData, useFetcher, useBlocker } from "react-router";
 import { eq } from "drizzle-orm";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
@@ -30,11 +30,21 @@ import { getDb } from "~/lib/db/client";
 import { subscribeToRoom } from "~/lib/realtime";
 import { notifyRoomStatus } from "~/lib/server/notify.server";
 import { interviewers } from "~/lib/db/schema";
-import { parseEmbedURL } from "~/lib/utils";
+import {
+	clearStoredInterviewerId,
+	parseEmbedURL,
+	setStoredInterviewerId,
+} from "~/lib/utils";
 import Dino from "~/components/features/dino";
 import { useEffect, useState } from "react";
 
 const TIME: number = 20 * 60;
+
+function computeTimeLeft(startedAt: number | null): number {
+	return startedAt === null
+		? TIME
+		: TIME - Math.floor((Date.now() - startedAt) / 1000);
+}
 
 export const meta: MetaFunction = () => {
 	return [
@@ -59,11 +69,6 @@ export default function RoomPage() {
 	const data = useLoaderData<typeof loader>();
 	const fetcher = useFetcher();
 
-	const [isDialogOpen, setIsDialogOpen] = useState(false);
-	const [isBreakDialogOpen, setIsBreakDialogOpen] = useState(false);
-	const [embedURL, setEmbedURL] = useState("");
-	const [timeLeft, setTimeLeft] = useState(TIME ?? 20);
-	const [isTimerRunning, setIsTimerRunning] = useState(false);
  	const [showTimeAlert, setShowTimeAlert] = useState(false);
  	const [showMissingIntervieweeAlert, setShowMissingIntervieweeAlert] = useState(false);
  	const [showActiveInterviewAlert, setShowActiveInterviewAlert] = useState(false);
@@ -72,11 +77,57 @@ export default function RoomPage() {
  	const [broadcastMessage, setBroadcastMessage] = useState("");
 	const [showMissingFormConfigAlert, setShowMissingFormConfigAlert] =
 		useState(false);
+	// Server-authoritative session state: the dialog + countdown are derived
+	// from the interviewer row so a refresh/navigation restores the session.
 	const status = data.interviewer?.status ?? "idle";
+	const startedAt = data.interviewer?.interview_started_at ?? null;
 	const isBreak = status === "break";
 	const isInterviewActive = status === "interviewing";
 	const isFinished = status === "idle";
-	const isTimeout = timeLeft <= 0;
+	const isDialogOpen = isInterviewActive;
+	const isBreakDialogOpen = isBreak;
+	const embedURL =
+		isInterviewActive && data.interviewer && data.interviewer.interviewee
+			? parseEmbedURL(data.interviewer.name, data.interviewer.interviewee)
+			: null;
+
+	const [timeLeft, setTimeLeft] = useState(() => computeTimeLeft(startedAt));
+	const isTimeout = isInterviewActive && timeLeft <= 0;
+
+	// Persist the active session so `/` and `/register` can redirect back here,
+	// and clear it when the interviewer row is gone (e.g. PULANG / 404).
+	useEffect(() => {
+		if (data.interviewer) setStoredInterviewerId(data.interviewer.id as string);
+		else clearStoredInterviewerId();
+	}, [data.interviewer]);
+
+	// Warn on in-app navigation away from an active interview.
+	const blocker = useBlocker(
+		({ currentLocation, nextLocation }) =>
+			isInterviewActive && currentLocation.pathname !== nextLocation.pathname,
+	);
+
+	// Re-anchor the countdown whenever a (new) interview starts.
+	useEffect(() => {
+		setTimeLeft(computeTimeLeft(startedAt));
+		setHasShownAlert(false);
+		setShowTimeAlert(false);
+	}, [startedAt]);
+
+	// Tick the countdown while the interview is active.
+	useEffect(() => {
+		if (!isInterviewActive) return;
+		const interval = setInterval(() => setTimeLeft((prev) => prev - 1), 1000);
+		return () => clearInterval(interval);
+	}, [isInterviewActive]);
+
+	// Fire the "time's up" alert once, even if the page reloaded past zero.
+	useEffect(() => {
+		if (isInterviewActive && timeLeft <= 0 && !hasShownAlert) {
+			setShowTimeAlert(true);
+			setHasShownAlert(true);
+		}
+	}, [isInterviewActive, timeLeft, hasShownAlert]);
 
 	useEffect(() => {
 		const preventReload = (event: BeforeUnloadEvent) => {
@@ -100,25 +151,6 @@ export default function RoomPage() {
 
 	}, []);
 
-	useEffect(() => {
-		if (!isTimerRunning || data.interviewer?.interviewee === null) return;
-
-		const interval = setInterval(() => {
-			setTimeLeft((prev) => {
-				const newTime = prev - 1;
-
-				if (newTime === 0 && !hasShownAlert) {
-					setShowTimeAlert(true);
-					setHasShownAlert(true);
-				}
-
-				return newTime;
-			});
-		}, 1000);
-
-		return () => clearInterval(interval);
-	}, [isTimerRunning, data.interviewer?.interviewee, hasShownAlert]);
-
 	const handleStartInterview = (e: React.MouseEvent<HTMLButtonElement>) => {
 		e.preventDefault();
 
@@ -130,19 +162,12 @@ export default function RoomPage() {
  			return;
  		}
 
-		const embedUrl = parseEmbedURL(data.interviewer?.name ?? "", interviewee);
-		if (embedUrl === null) {
+		if (parseEmbedURL(data.interviewer?.name ?? "", interviewee) === null) {
 			setShowMissingFormConfigAlert(true);
 			return;
 		}
 
-		setEmbedURL(embedUrl);
 		fetcher.submit(formData, { method: "post" });
-
-		setIsDialogOpen(true);
-		setIsTimerRunning(true);
-		setTimeLeft(TIME ?? 20);
-		setHasShownAlert(false);
 	};
 
  	const handleBreak = () => {
@@ -154,19 +179,15 @@ export default function RoomPage() {
 		const formData = new FormData();
 		formData.append("_action", "break");
 		fetcher.submit(formData, { method: "post" });
-		setIsBreakDialogOpen(true);
 	};
 
 	const handleBreakFinished = () => {
-		setIsBreakDialogOpen(false);
 		const formData = new FormData();
 		formData.append("_action", "reset");
 		fetcher.submit(formData, { method: "post" });
 	};
 
 	const handleCloseDialog = () => {
-		setIsDialogOpen(false);
-		setIsTimerRunning(false);
 		const formData = new FormData();
 		formData.append("_action", "reset");
 		fetcher.submit(formData, { method: "post" });
@@ -186,7 +207,12 @@ export default function RoomPage() {
 	return (
 		<div className="min-h-[90vh] flex justify-center items-center">
 
-			<form method="POST" id="quit" className="invisible">
+			<form
+				method="POST"
+				id="quit"
+				className="invisible"
+				onSubmit={clearStoredInterviewerId}
+			>
 				<input type="hidden" name="_action" value="quit" />
 			</form>
 
@@ -257,7 +283,7 @@ export default function RoomPage() {
 			</main>
 
 			{/* Google Form */}
-			<Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+			<Dialog open={isDialogOpen} onOpenChange={() => {}}>
 				<DialogContent onPointerDownOutside={(event) => event.preventDefault()}
 					className="max-w-4xl h-[90vh] flex flex-col">
 					<DialogHeader>
@@ -301,7 +327,7 @@ export default function RoomPage() {
 					<div className="flex-1 overflow-hidden rounded-md border">
 					<iframe
 						title="Interview form"
-						src={embedURL}
+						src={embedURL ?? ""}
 						className="h-full w-full border-0"
 						loading="lazy"
 					>
@@ -432,6 +458,30 @@ export default function RoomPage() {
 						<AlertDialogAction className="font-bold"
 							onClick={() => setShowBroadcastAlert(false)}>
 							OK, Mengerti
+						</AlertDialogAction>
+					</AlertDialogFooter>
+				</AlertDialogContent>
+			</AlertDialog>
+
+			<AlertDialog open={blocker.state === "blocked"}>
+				<AlertDialogContent>
+					<AlertDialogHeader>
+						<AlertDialogTitle>Keluar dari sesi interview?</AlertDialogTitle>
+						<AlertDialogDescription>
+							Sesi interview sedang berlangsung. Kalau keluar, sesi tetap berjalan
+							tapi kamu harus membuka ulang halaman ini.
+						</AlertDialogDescription>
+					</AlertDialogHeader>
+					<AlertDialogFooter>
+						<AlertDialogAction
+							onClick={() => blocker.state === "blocked" && blocker.reset()}
+						>
+							Tetap di sini
+						</AlertDialogAction>
+						<AlertDialogAction
+							onClick={() => blocker.state === "blocked" && blocker.proceed()}
+						>
+							Keluar
 						</AlertDialogAction>
 					</AlertDialogFooter>
 				</AlertDialogContent>

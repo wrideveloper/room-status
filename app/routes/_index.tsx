@@ -1,6 +1,6 @@
 import type { FormEvent } from "react";
-import { useState } from "react";
-import { Link } from "react-router";
+import { useEffect, useState } from "react";
+import { Link, useNavigate } from "react-router";
 import { Megaphone, Monitor, UserRound } from "lucide-react";
 import {
 	Dialog,
@@ -13,6 +13,7 @@ import {
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { Alert, type AlertVariant } from "~/components/ui/alert";
+import { getStoredInterviewerId } from "~/lib/utils";
 export const meta = () => [
 	{ title: "Room Status" },
 	{ name: "description", content: "Room Status application" },
@@ -34,6 +35,15 @@ const navigationCards = [
 ];
 
 export default function LandingPage() {
+	const navigate = useNavigate();
+
+	// Resume an active interviewer session after a refresh instead of
+	// re-registering. PULANG clears the stored id, so it won't bounce back.
+	useEffect(() => {
+		const id = getStoredInterviewerId();
+		if (id) navigate(`/room/${id}`, { replace: true });
+	}, [navigate]);
+
 	const [isBroadcastOpen, setIsBroadcastOpen] = useState(false);
 	const [message, setMessage] = useState("");
 	const [isSending, setIsSending] = useState(false);

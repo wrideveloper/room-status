@@ -24,3 +24,33 @@ export function parseEmbedURL(
 		encodeURIComponent(interviewer),
 	).replaceAll("{interviewee}", encodeURIComponent(interviewee));
 }
+
+/** localStorage key holding the currently active interviewer session id. */
+export const INTERVIEWER_ID_KEY = "room-status:interviewer-id";
+
+export function getStoredInterviewerId(): string | null {
+	if (typeof window === "undefined") return null;
+	try {
+		return window.localStorage.getItem(INTERVIEWER_ID_KEY);
+	} catch {
+		return null;
+	}
+}
+
+export function setStoredInterviewerId(id: string): void {
+	if (typeof window === "undefined") return;
+	try {
+		window.localStorage.setItem(INTERVIEWER_ID_KEY, id);
+	} catch {
+		// Storage unavailable (private mode / quota) - session just won't persist.
+	}
+}
+
+export function clearStoredInterviewerId(): void {
+	if (typeof window === "undefined") return;
+	try {
+		window.localStorage.removeItem(INTERVIEWER_ID_KEY);
+	} catch {
+		// Ignore.
+	}
+}

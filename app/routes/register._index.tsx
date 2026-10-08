@@ -2,7 +2,9 @@ import {
 	type ActionFunctionArgs,
 	type MetaFunction,
 	redirect,
+	useNavigate,
 } from "react-router";
+import { useEffect } from "react";
 import { Label } from "~/components/ui/label";
 import {
 	Select,
@@ -19,6 +21,7 @@ import { notifyRoomStatus } from "~/lib/server/notify.server";
 import { eq } from "drizzle-orm";
 import { interviewers } from "~/lib/db/schema";
 import { INTERVIEWERS } from "~/lib/data/interviewer";
+import { getStoredInterviewerId } from "~/lib/utils";
 
 export const meta: MetaFunction = () => {
 	return [
@@ -28,6 +31,14 @@ export const meta: MetaFunction = () => {
 };
 
 export default function RoomPage() {
+	const navigate = useNavigate();
+
+	// Already registered (and not on break/quit)? Go straight back to the room.
+	useEffect(() => {
+		const id = getStoredInterviewerId();
+		if (id) navigate(`/room/${id}`, { replace: true });
+	}, [navigate]);
+
 	return (
 		<div className="min-h-[90vh] flex justify-center items-center">
 			<main className="mx-auto w-[min(60%,360px)] p-6 border rounded-[1rem] bg-white">
