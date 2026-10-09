@@ -16,4 +16,11 @@ export const interviewers = sqliteTable("interviewers", {
 	updated_at: integer("updated_at"),
 });
 
+export const interviewees = sqliteTable("interviewees", {
+	id: integer("id").primaryKey({ autoIncrement: true }),
+	name: text("name").notNull()
+});
+
 export type Interviewer = typeof interviewers.$inferSelect;
+
+export type Interviewees = typeof interviewees.$inferSelect;

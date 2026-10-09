@@ -29,7 +29,10 @@ import {
 import { getDb } from "~/lib/db/client";
 import { subscribeToRoom } from "~/lib/realtime";
 import { notifyRoomStatus } from "~/lib/server/notify.server";
-import { interviewers } from "~/lib/db/schema";
+import { 
+	interviewers, 
+	interviewees, 
+} from "~/lib/db/schema";
 import {
 	clearStoredInterviewerId,
 	parseEmbedURL,
@@ -63,9 +66,18 @@ export async function loader({ params }: LoaderFunctionArgs) {
 		.from(interviewers)
 		.where(eq(interviewers.id, params.id as string));
 
-	if (interviewer === undefined) return routeData({ interviewer: null }, { status: 404 });
+	const intervieweeOptions = await db
+		.select({ id: interviewees.id, name: interviewees.name })
+		.from(interviewees);
 
-	return { interviewer: interviewer };
+	if (interviewer === undefined) {
+		return routeData(
+			{ interviewer: null, intervieweeOptions: [] },
+			{ status: 404 },
+		);
+	}
+
+	return { interviewer, intervieweeOptions };
 }
 
 export default function RoomPage() {
@@ -238,7 +250,7 @@ export default function RoomPage() {
 				<form className="flex flex-col gap-4 mt-6" id="data" method="POST">
 					<input type="hidden" name="_action" value="update" />
 					<Label>
-						<span className="block mb-2">Name</span>
+						<span className="block mb-2">Nama</span>
 						<Input
 							name="name"
 							type="text"
@@ -250,10 +262,16 @@ export default function RoomPage() {
 					<Label>
 						<span className="block mb-2">Peserta</span>
 						<div className="flex items-center gap-2">
+							<datalist id="peserta">
+								{data.intervieweeOptions.map((item) => (
+									<option key={item.id} value={item.name} />
+								))}
+							</datalist>
 							<Input
 								name="interviewee"
 								type="text"
 								placeholder="Tanya namanya..."
+								list="peserta"
 								defaultValue={data.interviewer?.interviewee ?? ""}
 							/>
 						</div>
