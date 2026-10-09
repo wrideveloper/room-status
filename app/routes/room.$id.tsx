@@ -27,9 +27,13 @@ import {
 	AlertDialogTitle,
 } from "~/components/ui/alert-dialog";
 import { getDb } from "~/lib/db/client";
+import { Notification } from "~/components/ui/notification";
 import { subscribeToRoom } from "~/lib/realtime";
 import { notifyRoomStatus } from "~/lib/server/notify.server";
-import { interviewers } from "~/lib/db/schema";
+import { 
+	interviewers, 
+	interviewees, 
+} from "~/lib/db/schema";
 import {
 	clearStoredInterviewerId,
 	parseEmbedURL,
@@ -40,8 +44,9 @@ import { useEffect, useState } from "react";
 import { House, Monitor } from "lucide-react";
 import { NavLinks } from "~/components/nav-links";
 
-// const TIME: number = 20 * 60;
+// const TIME = 20 * 60;
 const TIME: number = 15 * 60; // change to 15 minutes instead of 20
+const BREAK_TIME = 2 * 60;
 
 function computeTimeLeft(startedAt: number | null): number {
 	return startedAt === null
@@ -63,9 +68,18 @@ export async function loader({ params }: LoaderFunctionArgs) {
 		.from(interviewers)
 		.where(eq(interviewers.id, params.id as string));
 
-	if (interviewer === undefined) return routeData({ interviewer: null }, { status: 404 });
+	const intervieweeOptions = await db
+		.select({ id: interviewees.id, name: interviewees.name })
+		.from(interviewees);
 
-	return { interviewer: interviewer };
+	if (interviewer === undefined) {
+		return routeData(
+			{ interviewer: null, intervieweeOptions: [] },
+			{ status: 404 },
+		);
+	}
+
+	return { interviewer, intervieweeOptions };
 }
 
 export default function RoomPage() {
@@ -88,14 +102,40 @@ export default function RoomPage() {
 	const isInterviewActive = status === "interviewing";
 	const isFinished = status === "idle";
 	const isDialogOpen = isInterviewActive;
-	const isBreakDialogOpen = isBreak;
 	const embedURL =
 		isInterviewActive && data.interviewer && data.interviewer.interviewee
 			? parseEmbedURL(data.interviewer.name, data.interviewer.interviewee)
 			: null;
 
 	const [timeLeft, setTimeLeft] = useState(() => computeTimeLeft(startedAt));
+	const [breakTime, setBreakTime] = useState(0);
+	const [iframeURL, setIframeURL] = useState<string | null>(null);
+	const [interviewee, setInterviewee] = useState(
+		() => data.interviewer?.interviewee ?? "",
+	);
 	const isTimeout = isInterviewActive && timeLeft <= 0;
+	const isBreakDialogOpen = isBreak;
+
+	// Keep the Google Form mounted; unmounting it can trigger its beforeunload handler.
+	useEffect(() => {
+		if (embedURL) setIframeURL(embedURL);
+	}, [embedURL]);
+
+	// Tick the break countdown while break time remains.
+	useEffect(() => {
+		if (!isBreak) return;
+		const interval = setInterval(() => setBreakTime((prev) => Math.max(prev - 1, 0)), 1000);
+		return () => clearInterval(interval);
+	}, [isBreak]);
+
+	useEffect(() => {
+		if (!isBreak || breakTime > 0 || fetcher.state !== "idle") return;
+
+		const formData = new FormData();
+		formData.append("_action", "reset");
+		fetcher.submit(formData, { method: "post" });
+	}, [isBreak, breakTime, fetcher.state, fetcher.submit]);
+
 
 	// Persist the active session so `/` and `/register` can redirect back here,
 	// and clear it when the interviewer row is gone (e.g. PULANG / 404).
@@ -133,13 +173,6 @@ export default function RoomPage() {
 	}, [isInterviewActive, timeLeft, hasShownAlert]);
 
 	useEffect(() => {
-		const preventReload = (event: BeforeUnloadEvent) => {
-			event.preventDefault();
-			event.returnValue = "";
-		};
-
-		window.addEventListener("beforeunload", preventReload);
-
 		const unsubscribe = subscribeToRoom((message) => {
 			if (message.type === "broadcast") {
 				setBroadcastMessage(message.message);
@@ -148,10 +181,10 @@ export default function RoomPage() {
 		});
 
 		return () => {
-			window.removeEventListener("beforeunload", preventReload);
 			unsubscribe();
 		};
 
+		return unsubscribe;
 	}, []);
 
 	const handleStartInterview = (e: React.MouseEvent<HTMLButtonElement>) => {
@@ -179,6 +212,8 @@ export default function RoomPage() {
 			return;
 		}
 
+		if (breakTime === 0) return;
+
 		const formData = new FormData();
 		formData.append("_action", "break");
 		fetcher.submit(formData, { method: "post" });
@@ -191,6 +226,8 @@ export default function RoomPage() {
 	};
 
 	const handleCloseDialog = () => {
+		setInterviewee("");
+		setBreakTime(BREAK_TIME);
 		const formData = new FormData();
 		formData.append("_action", "reset");
 		fetcher.submit(formData, { method: "post" });
@@ -238,7 +275,7 @@ export default function RoomPage() {
 				<form className="flex flex-col gap-4 mt-6" id="data" method="POST">
 					<input type="hidden" name="_action" value="update" />
 					<Label>
-						<span className="block mb-2">Name</span>
+						<span className="block mb-2">Nama</span>
 						<Input
 							name="name"
 							type="text"
@@ -250,11 +287,18 @@ export default function RoomPage() {
 					<Label>
 						<span className="block mb-2">Peserta</span>
 						<div className="flex items-center gap-2">
+							<datalist id="peserta">
+								{data.intervieweeOptions.map((item) => (
+									<option key={item.id} value={item.name} />
+								))}
+							</datalist>
 							<Input
 								name="interviewee"
 								type="text"
 								placeholder="Tanya namanya..."
-								defaultValue={data.interviewer?.interviewee ?? ""}
+								list="peserta"
+								value={interviewee}
+								onChange={(event) => setInterviewee(event.target.value)}
 							/>
 						</div>
 					</Label>
@@ -276,6 +320,7 @@ export default function RoomPage() {
 							variant="default"
 							className="font-bold"
 							type="button"
+							disabled={isInterviewActive || breakTime === 0}
 						>
 							ISTIRAHAT DULS
 						</Button>
@@ -293,9 +338,12 @@ export default function RoomPage() {
 			</main>
 
 			{/* Google Form */}
-			<Dialog open={isDialogOpen} onOpenChange={() => { }}>
-				<DialogContent onPointerDownOutside={(event) => event.preventDefault()}
-					className="max-w-4xl h-[90vh] flex flex-col">
+			<Dialog open={isDialogOpen} onOpenChange={() => {}}>
+				<DialogContent
+					forceMount
+					onPointerDownOutside={(event) => event.preventDefault()}
+					className="max-w-4xl h-[90vh] flex flex-col"
+				>
 					<DialogHeader>
 						<div className="flex items-center justify-between">
 							<div>
@@ -325,6 +373,7 @@ export default function RoomPage() {
 									</>
 								)}
 								<Button
+									type="button"
 									onClick={handleCloseDialog}
 									variant="destructive"
 									size="sm"
@@ -335,14 +384,14 @@ export default function RoomPage() {
 						</div>
 					</DialogHeader>
 					<div className="flex-1 overflow-hidden rounded-md border">
-						<iframe
-							title="Interview form"
-							src={embedURL ?? ""}
-							className="h-full w-full border-0"
-							loading="lazy"
-						>
-							Loading...
-						</iframe>
+					<iframe
+						title="Interview form"
+						src={iframeURL ?? ""}
+						className="h-full w-full border-0"
+						loading="lazy"
+					>
+						Loading...
+					</iframe>
 					</div>
 				</DialogContent>
 			</Dialog>
@@ -356,12 +405,19 @@ export default function RoomPage() {
 					onKeyUp={(e) => { if (e.code === "Space") e.preventDefault() }}
 				>
 					<DialogHeader className="items-center text-center">
-						<DialogTitle className="text-[1.8rem]">
-							Istirahat Dulu Bolo
-						</DialogTitle>
-						<DialogDescription className="text-center text-lg">
-							Jangan lama-lama yaa😁
-						</DialogDescription>
+						<div className="flex items-start justify-between gap-4 w-full">
+							<div className="flex-1">
+								<DialogTitle className="text-[1.8rem]">
+									Istirahat Duls
+								</DialogTitle>
+								<DialogDescription className="text-lg">
+									Jangan lama-lama yaa😁
+								</DialogDescription>
+							</div>
+							<div className="text-2xl font-bold tabular-nums text-yellow-500">
+								{formatTime(breakTime)}
+							</div>
+						</div>
 					</DialogHeader>
 
 					<Dino />
@@ -452,26 +508,11 @@ export default function RoomPage() {
 				</AlertDialogContent>
 			</AlertDialog>
 
-			<AlertDialog open={showBroadcastAlert} onOpenChange={setShowBroadcastAlert}>
-				<AlertDialogContent className="py-6">
-					<AlertDialogHeader>
-						<AlertDialogTitle className="text-center text-3xl text-sans font-bold tracking-tight mb-3">
-							Ada Pesan Dari <b className="text-red-500">ATMIN!</b>
-						</AlertDialogTitle>
-						<AlertDialogDescription className="text-base">
-							<pre className="whitespace-pre-wrap px-3 py-2 bg-slate-50 text-slate-600 font-medium border border-slate-300 border-l-8 rounded-sm overflow-x-auto font-sans leading-relaxed">
-								{broadcastMessage}
-							</pre>
-						</AlertDialogDescription>
-					</AlertDialogHeader>
-					<AlertDialogFooter>
-						<AlertDialogAction className="font-bold"
-							onClick={() => setShowBroadcastAlert(false)}>
-							OK, Mengerti
-						</AlertDialogAction>
-					</AlertDialogFooter>
-				</AlertDialogContent>
-			</AlertDialog>
+			<Notification
+				open={showBroadcastAlert}
+				message={broadcastMessage}
+				onClose={() => setShowBroadcastAlert(false)}
+			/>
 
 			<AlertDialog open={blocker.state === "blocked"}>
 				<AlertDialogContent>
