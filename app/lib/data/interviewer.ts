@@ -17,4 +17,6 @@ export const INTERVIEWERS = [
 	{ id: "fijriati", name: "Fijriati Rahmatur Rizqi" },
 	{ id: "farrelino", name: "Farrelino Athaillah Ribera" },
 	{ id: "fattahul", name: "Muhammad Fattahul Alim" },
+	{ id: "fazel", name: "Fazel Priyono" },
+	{ id: "jasmine", name: "Jasmine Nasywa Nabilah" },
 ];
