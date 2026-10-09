@@ -27,6 +27,7 @@ import {
 	AlertDialogTitle,
 } from "~/components/ui/alert-dialog";
 import { getDb } from "~/lib/db/client";
+import { Notification } from "~/components/ui/notification";
 import { subscribeToRoom } from "~/lib/realtime";
 import { notifyRoomStatus } from "~/lib/server/notify.server";
 import { 
@@ -109,6 +110,9 @@ export default function RoomPage() {
 	const [timeLeft, setTimeLeft] = useState(() => computeTimeLeft(startedAt));
 	const [breakTime, setBreakTime] = useState(0);
 	const [iframeURL, setIframeURL] = useState<string | null>(null);
+	const [interviewee, setInterviewee] = useState(
+		() => data.interviewer?.interviewee ?? "",
+	);
 	const isTimeout = isInterviewActive && timeLeft <= 0;
 	const isBreakDialogOpen = isBreak;
 
@@ -218,6 +222,7 @@ export default function RoomPage() {
 	};
 
 	const handleCloseDialog = () => {
+		setInterviewee("");
 		setBreakTime(BREAK_TIME);
 		const formData = new FormData();
 		formData.append("_action", "reset");
@@ -288,7 +293,8 @@ export default function RoomPage() {
 								type="text"
 								placeholder="Tanya namanya..."
 								list="peserta"
-								defaultValue={data.interviewer?.interviewee ?? ""}
+								value={interviewee}
+								onChange={(event) => setInterviewee(event.target.value)}
 							/>
 						</div>
 					</Label>
@@ -498,26 +504,11 @@ export default function RoomPage() {
 				</AlertDialogContent>
 			</AlertDialog>
 
-			<AlertDialog open={showBroadcastAlert} onOpenChange={setShowBroadcastAlert}>
-				<AlertDialogContent className="py-6">
-					<AlertDialogHeader>
-						<AlertDialogTitle className="text-center text-3xl text-sans font-bold tracking-tight mb-3">
-							Ada Pesan Dari <b className="text-red-500">ATMIN!</b>
-						</AlertDialogTitle>
-						<AlertDialogDescription className="text-base">
-							<pre className="whitespace-pre-wrap px-3 py-2 bg-slate-50 text-slate-600 font-medium border border-slate-300 border-l-8 rounded-sm overflow-x-auto font-sans leading-relaxed">
-								{broadcastMessage}
-							</pre>
-						</AlertDialogDescription>
-					</AlertDialogHeader>
-					<AlertDialogFooter>
-						<AlertDialogAction className="font-bold"
-							onClick={() => setShowBroadcastAlert(false)}>
-							OK, Mengerti
-						</AlertDialogAction>
-					</AlertDialogFooter>
-				</AlertDialogContent>
-			</AlertDialog>
+			<Notification
+				open={showBroadcastAlert}
+				message={broadcastMessage}
+				onClose={() => setShowBroadcastAlert(false)}
+			/>
 
 			<AlertDialog open={blocker.state === "blocked"}>
 				<AlertDialogContent>
