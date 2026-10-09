@@ -180,6 +180,10 @@ export default function RoomPage() {
 			}
 		});
 
+		return () => {
+			unsubscribe();
+		};
+
 		return unsubscribe;
 	}, []);
 
