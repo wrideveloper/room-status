@@ -40,7 +40,8 @@ import { useEffect, useState } from "react";
 import { House, Monitor } from "lucide-react";
 import { NavLinks } from "~/components/nav-links";
 
-const TIME: number = 20 * 60;
+// const TIME: number = 20 * 60;
+const TIME: number = 15 * 60; // change to 15 minutes instead of 20
 
 function computeTimeLeft(startedAt: number | null): number {
 	return startedAt === null
@@ -64,19 +65,19 @@ export async function loader({ params }: LoaderFunctionArgs) {
 
 	if (interviewer === undefined) return routeData({ interviewer: null }, { status: 404 });
 
-	return {interviewer: interviewer};
+	return { interviewer: interviewer };
 }
 
 export default function RoomPage() {
 	const data = useLoaderData<typeof loader>();
 	const fetcher = useFetcher();
 
- 	const [showTimeAlert, setShowTimeAlert] = useState(false);
- 	const [showMissingIntervieweeAlert, setShowMissingIntervieweeAlert] = useState(false);
- 	const [showActiveInterviewAlert, setShowActiveInterviewAlert] = useState(false);
- 	const [hasShownAlert, setHasShownAlert] = useState(false);
- 	const [showBroadcastAlert, setShowBroadcastAlert] = useState(false);
- 	const [broadcastMessage, setBroadcastMessage] = useState("");
+	const [showTimeAlert, setShowTimeAlert] = useState(false);
+	const [showMissingIntervieweeAlert, setShowMissingIntervieweeAlert] = useState(false);
+	const [showActiveInterviewAlert, setShowActiveInterviewAlert] = useState(false);
+	const [hasShownAlert, setHasShownAlert] = useState(false);
+	const [showBroadcastAlert, setShowBroadcastAlert] = useState(false);
+	const [broadcastMessage, setBroadcastMessage] = useState("");
 	const [showMissingFormConfigAlert, setShowMissingFormConfigAlert] =
 		useState(false);
 	// Server-authoritative session state: the dialog + countdown are derived
@@ -146,10 +147,10 @@ export default function RoomPage() {
 			}
 		});
 
-	return () => {
-		window.removeEventListener("beforeunload", preventReload);
-		unsubscribe();
-	};
+		return () => {
+			window.removeEventListener("beforeunload", preventReload);
+			unsubscribe();
+		};
 
 	}, []);
 
@@ -159,10 +160,10 @@ export default function RoomPage() {
 		const form = document.getElementById("data") as HTMLFormElement;
 		const formData = new FormData(form);
 		const interviewee = formData.get("interviewee")?.toString().trim();
- 		if (!interviewee) {
- 			setShowMissingIntervieweeAlert(true);
- 			return;
- 		}
+		if (!interviewee) {
+			setShowMissingIntervieweeAlert(true);
+			return;
+		}
 
 		if (parseEmbedURL(data.interviewer?.name ?? "", interviewee) === null) {
 			setShowMissingFormConfigAlert(true);
@@ -172,11 +173,11 @@ export default function RoomPage() {
 		fetcher.submit(formData, { method: "post" });
 	};
 
- 	const handleBreak = () => {
- 		if (isInterviewActive) {
- 			setShowActiveInterviewAlert(true);
- 			return;
- 		}
+	const handleBreak = () => {
+		if (isInterviewActive) {
+			setShowActiveInterviewAlert(true);
+			return;
+		}
 
 		const formData = new FormData();
 		formData.append("_action", "break");
@@ -292,7 +293,7 @@ export default function RoomPage() {
 			</main>
 
 			{/* Google Form */}
-			<Dialog open={isDialogOpen} onOpenChange={() => {}}>
+			<Dialog open={isDialogOpen} onOpenChange={() => { }}>
 				<DialogContent onPointerDownOutside={(event) => event.preventDefault()}
 					className="max-w-4xl h-[90vh] flex flex-col">
 					<DialogHeader>
@@ -309,7 +310,7 @@ export default function RoomPage() {
 								</DialogDescription>
 							</div>
 							<div className="flex items-center gap-4">
-								
+
 								{!isFinished && (
 									<>
 										<div className="flex items-center gap-2">
@@ -334,14 +335,14 @@ export default function RoomPage() {
 						</div>
 					</DialogHeader>
 					<div className="flex-1 overflow-hidden rounded-md border">
-					<iframe
-						title="Interview form"
-						src={embedURL ?? ""}
-						className="h-full w-full border-0"
-						loading="lazy"
-					>
-						Loading...
-					</iframe>
+						<iframe
+							title="Interview form"
+							src={embedURL ?? ""}
+							className="h-full w-full border-0"
+							loading="lazy"
+						>
+							Loading...
+						</iframe>
 					</div>
 				</DialogContent>
 			</Dialog>
@@ -351,8 +352,8 @@ export default function RoomPage() {
 					className="max-w-md text-center"
 					onPointerDownOutside={(e) => e.preventDefault()}
 					onEscapeKeyDown={(e) => e.preventDefault()}
-					onKeyDown={(e) => {if (e.code === "Space") e.preventDefault()}}
-					onKeyUp={(e) => {if (e.code === "Space") e.preventDefault()}}
+					onKeyDown={(e) => { if (e.code === "Space") e.preventDefault() }}
+					onKeyUp={(e) => { if (e.code === "Space") e.preventDefault() }}
 				>
 					<DialogHeader className="items-center text-center">
 						<DialogTitle className="text-[1.8rem]">
@@ -388,46 +389,46 @@ export default function RoomPage() {
 					</AlertDialogFooter>
 				</AlertDialogContent>
 			</AlertDialog>
- 			<AlertDialog
- 				open={showMissingIntervieweeAlert}
- 				onOpenChange={setShowMissingIntervieweeAlert}
- 			>
- 				<AlertDialogContent>
- 					<AlertDialogHeader>
- 						<AlertDialogTitle>Nama peserta belum diisi</AlertDialogTitle>
- 						<AlertDialogDescription>
- 							Isi nama peserta terlebih dahulu sebelum memulai interview.
- 						</AlertDialogDescription>
- 					</AlertDialogHeader>
- 					<AlertDialogFooter>
- 						<AlertDialogAction
- 							onClick={() => setShowMissingIntervieweeAlert(false)}
- 						>
- 							Mengerti
- 						</AlertDialogAction>
- 					</AlertDialogFooter>
- 				</AlertDialogContent>
- 			</AlertDialog>
- 			<AlertDialog
- 				open={showActiveInterviewAlert}
- 				onOpenChange={setShowActiveInterviewAlert}
- 			>
- 				<AlertDialogContent>
- 					<AlertDialogHeader>
- 						<AlertDialogTitle>Interview masih berlangsung</AlertDialogTitle>
- 						<AlertDialogDescription>
- 							Selesaikan sesi interview terlebih dahulu sebelum mengambil waktu istirahat.
- 						</AlertDialogDescription>
- 					</AlertDialogHeader>
- 					<AlertDialogFooter>
- 						<AlertDialogAction
- 							onClick={() => setShowActiveInterviewAlert(false)}
- 						>
- 							Mengerti
- 						</AlertDialogAction>
- 					</AlertDialogFooter>
- 				</AlertDialogContent>
- 			</AlertDialog>
+			<AlertDialog
+				open={showMissingIntervieweeAlert}
+				onOpenChange={setShowMissingIntervieweeAlert}
+			>
+				<AlertDialogContent>
+					<AlertDialogHeader>
+						<AlertDialogTitle>Nama peserta belum diisi</AlertDialogTitle>
+						<AlertDialogDescription>
+							Isi nama peserta terlebih dahulu sebelum memulai interview.
+						</AlertDialogDescription>
+					</AlertDialogHeader>
+					<AlertDialogFooter>
+						<AlertDialogAction
+							onClick={() => setShowMissingIntervieweeAlert(false)}
+						>
+							Mengerti
+						</AlertDialogAction>
+					</AlertDialogFooter>
+				</AlertDialogContent>
+			</AlertDialog>
+			<AlertDialog
+				open={showActiveInterviewAlert}
+				onOpenChange={setShowActiveInterviewAlert}
+			>
+				<AlertDialogContent>
+					<AlertDialogHeader>
+						<AlertDialogTitle>Interview masih berlangsung</AlertDialogTitle>
+						<AlertDialogDescription>
+							Selesaikan sesi interview terlebih dahulu sebelum mengambil waktu istirahat.
+						</AlertDialogDescription>
+					</AlertDialogHeader>
+					<AlertDialogFooter>
+						<AlertDialogAction
+							onClick={() => setShowActiveInterviewAlert(false)}
+						>
+							Mengerti
+						</AlertDialogAction>
+					</AlertDialogFooter>
+				</AlertDialogContent>
+			</AlertDialog>
 
 			<AlertDialog
 				open={showMissingFormConfigAlert}
