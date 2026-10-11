@@ -1,6 +1,6 @@
 # Room Status
 
-![Room Status](https://github.com/user-attachments/assets/2e7a6d6c-4e66-4f34-9de4-220f454fcb9a)
+<img width="2876" height="1626" alt="image" src="https://github.com/user-attachments/assets/9653e05e-d10c-4cd8-8383-0f6313c08628" />
 
 A small interview room operations tool for the WRI Open Recruitment event.
 
@@ -46,7 +46,8 @@ real time, what every room and interviewer is doing.
 
 ## Architecture
 
-placeholder image stuff
+<img width="320"  alt="image" src="https://github.com/user-attachments/assets/018cdf50-26b4-43cf-a468-d6df17862982" />
+
 
 The app is a React Router v8 framework-mode app deployed as a single Cloudflare
 Worker. Persistence is Cloudflare D1 (SQLite) through Drizzle ORM. Realtime fan
@@ -396,6 +397,7 @@ These are intentional for the event but worth knowing before extending the app:
 - **Operational steps that are documented but not automated:** applying the
   remote D1 migrations, loading `interviewees.sql` into remote D1, and setting
   the correct `GOOGLE_FORM_EMBED_URL` entry ids for a given form.
+- **Please remove the red button stuff!** the red button in the right bottom will nuke all of the interviewers table! 
 
 ## Code style
 
