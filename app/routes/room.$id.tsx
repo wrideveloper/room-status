@@ -183,8 +183,17 @@ export default function RoomPage() {
 		return () => {
 			unsubscribe();
 		};
+	}, []);
 
-		return unsubscribe;
+	// Warn before the tab is closed or reloaded.
+	useEffect(() => {
+		const preventReload = (event: BeforeUnloadEvent) => {
+			event.preventDefault();
+			event.returnValue = "";
+		};
+
+		window.addEventListener("beforeunload", preventReload);
+		return () => window.removeEventListener("beforeunload", preventReload);
 	}, []);
 
 	const handleStartInterview = (e: React.MouseEvent<HTMLButtonElement>) => {
