@@ -58,8 +58,14 @@ export class RoomBroker extends DurableObject<Env> {
 	}
 
 	async webSocketClose(ws: WebSocket, code: number, reason: string) {
-		// `web_socket_auto_reply_to_close` (compat date >= 2026-04-07) completes
-		// the close handshake, so ws.close() is optional here.
+		// 1005 (no status), 1006 (abnormal) and 1015 (TLS) are reserved and must
+		// never be sent back in a close frame, so echoing them throws
+		// InvalidAccessError. `web_socket_auto_reply_to_close` (compat date
+		// >= 2026-04-07) already completed the handshake, so there is nothing to do.
+		if (code === 1005 || code === 1006 || code === 1015) return;
+
+		// Only close explicitly for real codes, keeping this correct on older
+		// compatibility dates that do not auto-reply.
 		ws.close(code, reason);
 	}
 
